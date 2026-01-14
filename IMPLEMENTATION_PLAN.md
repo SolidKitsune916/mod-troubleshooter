@@ -194,7 +194,7 @@
   - Classify by file type
   - Priority: 28
 
-- [ ] **US-029**: Implement conflict severity scoring
+- [x] **US-029**: Implement conflict severity scoring
   - Score based on file type
   - Consider known incompatibilities
   - Priority: 29
@@ -359,6 +359,26 @@
   - Comprehensive statistics: counts by severity, file type, mods analyzed
   - Context cancellation support for long-running analyses
   - Comprehensive test suite (analyzer_test.go)
+- [x] **US-029**: Implement conflict severity scoring
+  - New Scorer type calculates numeric scores (0-100) for conflicts
+  - Base scores by file type: plugins=90, BSA=75, scripts=70, mesh=50, texture=45, etc.
+  - Identical file discount reduces score by 80 (clamped to minimum 0)
+  - Multi-mod bonus adds 5 points per additional mod beyond 2
+  - IncompatibilityRule system for known problematic patterns:
+    - Pattern matching: exact, prefix, suffix, contains, regex
+    - File type restrictions per rule
+    - Mod pattern matching for detecting specific mod combinations
+  - Default rules for common Bethesda modding patterns:
+    - SkyUI scripts/interface conflicts (bonus +15)
+    - Skeleton mesh conflicts (bonus +20)
+    - Animation behavior/framework conflicts (bonus +20-25)
+    - Face texture conflicts (bonus +5)
+    - Plugin overwrites (bonus +10)
+  - Score and MatchedRules fields added to Conflict type
+  - Stats extended with RuleMatchCount, TotalScore, MaxScore, AverageScore
+  - Conflicts sorted by severity then score (descending) then path
+  - NewAnalyzerWithRules for custom rule configuration
+  - Comprehensive test suite (scorer_test.go)
 
 ## Discovered Issues
 
