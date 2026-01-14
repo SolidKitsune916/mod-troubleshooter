@@ -182,7 +182,7 @@
 
 ### Backend
 
-- [ ] **US-027**: Implement file manifest extraction
+- [x] **US-027**: Implement file manifest extraction
   - Extract file list from archives
   - Normalize paths
   - Calculate hashes for dedup
@@ -330,6 +330,17 @@
   - MiniMap, Controls, and Legend panels
   - View mode toggle (List/Graph) in LoadOrderHeader
   - WCAG 2.2 compliant with ARIA labels and keyboard navigation
+- [x] **US-027**: Implement file manifest extraction
+  - New manifest package in backend/internal/manifest/
+  - FileEntry type with normalized path, size, hash, type classification
+  - Manifest type with file list, totals, and groupings by type/extension
+  - NormalizePath for case-insensitive, cross-platform path comparison
+  - ComputePathHash for SHA-256 path hashing (deduplication detection)
+  - DetermineFileType classifies files: plugin, mesh, texture, sound, script, interface, seq, bsa, other
+  - Extractor with ExtractManifest (fast), ExtractManifestWithHashes (content-based), ExtractManifestFiltered (with predicates)
+  - Filter functions: FilterByType, FilterByExtension, FilterByDirectory, FilterByPathPrefix
+  - Manifest query methods: GetFilesByType, GetFilesByDirectory, GetFilesByExtension, HasFile, GetFile
+  - Comprehensive test suite (types_test.go, extractor_test.go)
 
 ## Discovered Issues
 
