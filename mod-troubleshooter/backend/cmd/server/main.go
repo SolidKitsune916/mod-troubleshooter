@@ -6,10 +6,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/mod-troubleshooter/backend/internal/archive"
+	"github.com/mod-troubleshooter/backend/internal/cache"
 	"github.com/mod-troubleshooter/backend/internal/config"
 	"github.com/mod-troubleshooter/backend/internal/handlers"
 	"github.com/mod-troubleshooter/backend/internal/nexus"
@@ -99,6 +102,42 @@ func main() {
 	downloadHandler := handlers.NewDownloadHandler(clientMgr)
 	mux.HandleFunc("GET /api/games/{game}/mods/{modId}/files/{fileId}/download", downloadHandler.GetModFileDownloadLinks)
 
+	// Initialize archive downloader and extractor
+	downloader, err := archive.NewDownloader(archive.DownloaderConfig{
+		TempDir:     filepath.Join(cfg.DataDir, "downloads"),
+		MaxFileSize: 5 * 1024 * 1024 * 1024, // 5GB max
+	})
+	if err != nil {
+		log.Fatalf("Failed to create downloader: %v", err)
+	}
+
+	extractor, err := archive.NewExtractor(archive.ExtractorConfig{
+		TempDir:      filepath.Join(cfg.DataDir, "extracted"),
+		MaxFileSize:  100 * 1024 * 1024,        // 100MB per file
+		MaxTotalSize: 1024 * 1024 * 1024,       // 1GB total
+	})
+	if err != nil {
+		log.Fatalf("Failed to create extractor: %v", err)
+	}
+
+	// Initialize cache for FOMOD analysis results
+	fomodCache, err := cache.New(cache.Config{
+		DBPath: filepath.Join(cfg.DataDir, "cache.db"),
+		TTL:    time.Duration(cfg.CacheTTLHours) * time.Hour,
+	})
+	if err != nil {
+		log.Fatalf("Failed to create cache: %v", err)
+	}
+
+	// FOMOD analysis endpoints (requires Premium)
+	fomodHandler := handlers.NewFomodHandler(handlers.FomodHandlerConfig{
+		ClientGetter: clientMgr,
+		Downloader:   downloader,
+		Extractor:    extractor,
+		Cache:        fomodCache,
+	})
+	mux.HandleFunc("POST /api/fomod/analyze", fomodHandler.AnalyzeFomod)
+
 	// Configure CORS for React frontend
 	c := cors.New(cors.Options{
 		AllowedOrigins:   cfg.CORSOrigins,
@@ -145,6 +184,15 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatalf("Server shutdown error: %v", err)
 	}
+
+	// Cleanup resources
+	if err := fomodCache.Close(); err != nil {
+		log.Printf("Error closing cache: %v", err)
+	}
+	if err := downloader.Cleanup(); err != nil {
+		log.Printf("Error cleaning up downloads: %v", err)
+	}
+
 	log.Println("Server stopped")
 }
 

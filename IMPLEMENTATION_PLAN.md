@@ -94,7 +94,7 @@
   - Return structured JSON
   - Priority: 13
 
-- [ ] **US-014**: Create FOMOD analysis endpoint
+- [x] **US-014**: Create FOMOD analysis endpoint
   - `POST /api/fomod/analyze`
   - Orchestrate download → extract → parse
   - Cache results in SQLite
@@ -258,6 +258,14 @@
   - Parse conditional file installs
   - Case-insensitive directory and filename handling
   - Support for different XML encodings via x/net/html/charset
+- [x] **US-014**: Create FOMOD analysis endpoint
+  - `POST /api/fomod/analyze` endpoint for full FOMOD analysis
+  - Orchestrates: download → extract fomod/ → parse XML → return JSON
+  - SQLite caching via modernc.org/sqlite (pure Go)
+  - Cache stores analysis results keyed by game/modId/fileId
+  - Millisecond-precision TTL for cache expiration
+  - Proper cleanup of temp files after analysis
+  - Error handling for Premium-only downloads, invalid archives, missing FOMOD
 
 ## Discovered Issues
 
