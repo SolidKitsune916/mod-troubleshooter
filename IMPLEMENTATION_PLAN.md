@@ -132,7 +132,7 @@
   - Tree view of destination paths
   - Priority: 19
 
-- [ ] **US-020**: Add tree view mode
+- [x] **US-020**: Add tree view mode
   - Full FOMOD structure as collapsible tree
   - Alternative to wizard mode
   - Priority: 20
@@ -141,13 +141,13 @@
 
 ### Backend
 
-- [ ] **US-021**: Implement plugin header parser
+- [x] **US-021**: Implement plugin header parser
   - Read TES4 record from .esp/.esm/.esl
   - Extract master dependencies
   - Extract plugin flags
   - Priority: 21
 
-- [ ] **US-022**: Create load order analysis endpoint
+- [x] **US-022**: Create load order analysis endpoint
   - `GET /api/collections/:gameId/:slug/loadorder`
   - Parse plugins from collection mods
   - Build dependency graph
@@ -275,6 +275,32 @@
   - Millisecond-precision TTL for cache expiration
   - Proper cleanup of temp files after analysis
   - Error handling for Premium-only downloads, invalid archives, missing FOMOD
+- [x] **US-020**: Add tree view mode
+  - FomodTreeView component with collapsible tree hierarchy
+  - Shows all FOMOD elements: info, dependencies, steps, groups, plugins, files, flags
+  - Expand/collapse all buttons for navigation
+  - Type-specific icons and badge indicators
+  - View mode toggle in FomodViewer to switch between wizard and tree modes
+- [x] **US-021**: Implement plugin header parser
+  - Parse TES4 record header from .esp, .esm, .esl plugin files
+  - Extract plugin flags: Master (ESM), Light (ESL), Localized
+  - Extract MAST subrecords for master file dependencies with sizes
+  - Extract CNAM/SNAM for author and description metadata
+  - Determine plugin type from flags and file extension
+  - Support for Skyrim SE/AE form version (24-byte record headers)
+  - Comprehensive test suite with synthetic plugin generation
+- [x] **US-022**: Create load order analysis endpoint
+  - `POST /api/loadorder/analyze` endpoint for manual plugin list analysis
+  - `GET /api/collections/{slug}/revisions/{revision}/loadorder` for collection analysis
+  - New loadorder package with Analyzer type for dependency detection
+  - Detects missing masters (plugins require masters not in load order)
+  - Detects wrong order (plugins load before their masters)
+  - Returns dependency graph for frontend visualization
+  - Statistics: total plugins, ESM/ESP/ESL counts, issues by severity
+  - Downloads and parses plugin headers from Nexus archives
+  - Case-insensitive master matching
+  - Caching of collection analysis results
+  - Comprehensive test suite for analyzer
 
 ## Discovered Issues
 

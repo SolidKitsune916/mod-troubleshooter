@@ -138,6 +138,16 @@ func main() {
 	})
 	mux.HandleFunc("POST /api/fomod/analyze", fomodHandler.AnalyzeFomod)
 
+	// Load order analysis endpoints (requires Premium for collection analysis)
+	loadOrderHandler := handlers.NewLoadOrderHandler(handlers.LoadOrderHandlerConfig{
+		ClientGetter: clientMgr,
+		Downloader:   downloader,
+		Extractor:    extractor,
+		Cache:        fomodCache,
+	})
+	mux.HandleFunc("POST /api/loadorder/analyze", loadOrderHandler.AnalyzeLoadOrder)
+	mux.HandleFunc("GET /api/collections/{slug}/revisions/{revision}/loadorder", loadOrderHandler.AnalyzeCollectionLoadOrder)
+
 	// Configure CORS for React frontend
 	c := cors.New(cors.Options{
 		AllowedOrigins:   cfg.CORSOrigins,
