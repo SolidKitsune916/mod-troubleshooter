@@ -207,24 +207,24 @@
 
 ### Frontend
 
-- [ ] **US-031**: Create ConflictView container
+- [x] **US-031**: Create ConflictView container
   - Layout with filters, list, details
   - Summary header
   - Priority: 31
 
-- [ ] **US-032**: Implement ConflictList component
+- [x] **US-032**: Implement ConflictList component
   - Display conflicts with severity badges
   - Show conflicting mods and winner
   - Priority: 32
 
-- [ ] **US-033**: Implement conflict filters
+- [x] **US-033**: Implement conflict filters
   - By severity
   - By file type
   - By mod
   - Search by path
   - Priority: 33
 
-- [ ] **US-034**: Implement ConflictDetails panel
+- [x] **US-034**: Implement ConflictDetails panel
   - Full conflict information
   - Resolution suggestions
   - Priority: 34
@@ -390,6 +390,38 @@
   - Collection endpoint caches results keyed by slug, revision, and hash option
   - Handles Premium-only errors, context cancellation, and rate limiting
   - Updated handleNexusError to include ErrPremiumOnly case
+- [x] **US-031**: Create ConflictView container
+  - ConflictView container component with responsive grid layout (2/3 + 1/3)
+  - Stats header showing conflict counts by severity (critical, high, medium, low, info)
+  - Loading skeleton for async data loading state
+  - Error display with API error handling (404, 401, 403, 402, 500+)
+  - Empty state for collections without conflicts
+  - Screen reader announcements for data load completion
+  - Conflicts tab added to CollectionBrowser navigation
+- [x] **US-032**: Implement ConflictList component
+  - ConflictRow component with severity/type badges and conflict score
+  - Path display with monospace font and truncation
+  - Winner/loser count per conflict
+  - Identical file indicator badge
+  - Selection state with visual feedback (border highlight)
+  - Scrollable list with max height constraint
+  - Keyboard accessible selection (aria-pressed)
+- [x] **US-033**: Implement conflict filters
+  - Filter by severity (critical, high, medium, low, info)
+  - Filter by file type (plugin, bsa, script, mesh, texture, etc.)
+  - Filter by mod (dropdown with conflict counts)
+  - Search by path with real-time filtering
+  - Clear filters button when no results match
+  - Filters dynamically show only relevant options
+- [x] **US-034**: Implement ConflictDetails panel
+  - Full path display with word break
+  - Severity and file type badges with score
+  - Identical file status indicator
+  - Conflict message/description
+  - Winner panel with mod name and file size
+  - Losers list with mod names and file sizes
+  - Matched incompatibility rules display
+  - SummaryPanel as fallback showing per-mod conflict summaries
 
 ## Discovered Issues
 
