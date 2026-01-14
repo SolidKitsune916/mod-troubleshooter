@@ -188,7 +188,7 @@
   - Calculate hashes for dedup
   - Priority: 27
 
-- [ ] **US-028**: Implement conflict detection algorithm
+- [x] **US-028**: Implement conflict detection algorithm
   - Build file → mod map
   - Identify multi-source files
   - Classify by file type
@@ -341,6 +341,24 @@
   - Filter functions: FilterByType, FilterByExtension, FilterByDirectory, FilterByPathPrefix
   - Manifest query methods: GetFilesByType, GetFilesByDirectory, GetFilesByExtension, HasFile, GetFile
   - Comprehensive test suite (types_test.go, extractor_test.go)
+- [x] **US-028**: Implement conflict detection algorithm
+  - New conflict package in backend/internal/conflict/
+  - Analyzer type detects file conflicts between mods based on load order
+  - Build file → mod mapping from ModManifest inputs
+  - Identify multi-source files (same path in multiple mods)
+  - Classify conflicts by file type with severity levels:
+    - Critical: plugins (.esp/.esm/.esl)
+    - High: BSA archives, scripts
+    - Medium: meshes, textures, interfaces
+    - Low: sounds, sequences, other files
+    - Info: identical files (duplicates)
+  - Track winner (last in load order) and losers for each conflict
+  - Support identical file detection via content hashes
+  - Per-mod conflict summaries with win/lose counts
+  - FileToMods mapping for frontend lookups
+  - Comprehensive statistics: counts by severity, file type, mods analyzed
+  - Context cancellation support for long-running analyses
+  - Comprehensive test suite (analyzer_test.go)
 
 ## Discovered Issues
 
