@@ -173,7 +173,7 @@
   - Expandable warning details
   - Priority: 25
 
-- [ ] **US-026**: Add dependency graph view
+- [x] **US-026**: Add dependency graph view
   - React Flow or D3 visualization
   - Interactive node selection
   - Priority: 26
@@ -321,6 +321,15 @@
   - Success state when no issues found
   - LoadOrderDetails panel showing plugin-specific issues
   - Issue type labels: Missing Master, Wrong Order, Duplicate Plugin
+- [x] **US-026**: Add dependency graph view
+  - DependencyGraphView component using @xyflow/react (React Flow)
+  - Layered layout algorithm positioning plugins by dependency depth
+  - Color-coded nodes by plugin type (ESM=orange, ESP=gray, ESL=yellow)
+  - Interactive node selection with details panel below graph
+  - Red borders and animated edges for plugins with issues
+  - MiniMap, Controls, and Legend panels
+  - View mode toggle (List/Graph) in LoadOrderHeader
+  - WCAG 2.2 compliant with ARIA labels and keyboard navigation
 
 ## Discovered Issues
 
