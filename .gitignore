@@ -11,6 +11,10 @@ dist/
 build/
 *.local
 
+# Go binaries
+mod-troubleshooter/backend/server
+mod-troubleshooter/backend/bin/
+
 # Environment variables
 .env
 .env.local

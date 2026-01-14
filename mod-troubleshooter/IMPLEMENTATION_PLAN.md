@@ -31,11 +31,12 @@
   - Add rate limiting/backoff
   - Priority: 4
 
-- [ ] **US-005**: Implement collection fetching endpoint
-  - `GET /api/collections/:gameId/:slug`
-  - Parse GraphQL response
-  - Transform to frontend-friendly format
-  - Return mod list with metadata
+- [x] **US-005**: Implement collection fetching endpoint
+  - `GET /api/collections/{slug}` - fetches collection with latest revision mods
+  - `GET /api/collections/{slug}/revisions` - fetches revision history
+  - `GET /api/collections/{slug}/revisions/{revision}` - fetches specific revision mods
+  - Implemented handlers package with standard JSON response envelope
+  - Proper error mapping from Nexus client errors to HTTP status codes
   - Priority: 5
 
 ### Frontend Migration
