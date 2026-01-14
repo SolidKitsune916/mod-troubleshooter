@@ -199,7 +199,7 @@
   - Consider known incompatibilities
   - Priority: 29
 
-- [ ] **US-030**: Create conflict analysis endpoint
+- [x] **US-030**: Create conflict analysis endpoint
   - `POST /api/conflicts/analyze`
   - Analyze subset or full collection
   - Return detailed conflict report
@@ -379,6 +379,17 @@
   - Conflicts sorted by severity then score (descending) then path
   - NewAnalyzerWithRules for custom rule configuration
   - Comprehensive test suite (scorer_test.go)
+- [x] **US-030**: Create conflict analysis endpoint
+  - `POST /api/conflicts/analyze` endpoint for manual mod list analysis
+  - `GET /api/collections/{slug}/revisions/{revision}/conflicts` for collection analysis
+  - ConflictHandler with Nexus client, downloader, manifest extractor, and cache
+  - Request accepts list of mods with Nexus IDs (game, nexusModId, fileId)
+  - Downloads mod archives and extracts file manifests
+  - Optional content hash calculation via `includeContentHashes` parameter
+  - Returns full AnalysisResult with conflicts, stats, mod summaries, file-to-mods mapping
+  - Collection endpoint caches results keyed by slug, revision, and hash option
+  - Handles Premium-only errors, context cancellation, and rate limiting
+  - Updated handleNexusError to include ErrPremiumOnly case
 
 ## Discovered Issues
 
