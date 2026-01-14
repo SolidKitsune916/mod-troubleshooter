@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 
 import { useLoadOrderAnalysis } from '@hooks/useLoadOrder.ts';
 import { ApiError } from '@services/api.ts';
+import { DependencyGraphView } from './DependencyGraphView.tsx';
 
 import type {
   LoadOrderPluginInfo,
@@ -10,6 +11,9 @@ import type {
   LoadOrderPluginType,
   IssueSeverity,
 } from '@/types/index.ts';
+
+/** View mode for the load order display */
+type ViewMode = 'list' | 'graph';
 
 // ============================================
 // Props Interfaces
@@ -23,6 +27,8 @@ interface LoadOrderViewProps {
 interface LoadOrderHeaderProps {
   stats: LoadOrderStats;
   cached: boolean;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
 interface LoadOrderListProps {
@@ -201,22 +207,80 @@ const EmptyState: React.FC = () => (
 );
 
 // ============================================
+// View Mode Toggle Component
+// ============================================
+
+interface ViewModeToggleProps {
+  viewMode: ViewMode;
+  onChange: (mode: ViewMode) => void;
+}
+
+const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ viewMode, onChange }) => (
+  <div
+    className="flex rounded-sm overflow-hidden border border-border"
+    role="radiogroup"
+    aria-label="View mode"
+  >
+    <button
+      onClick={() => onChange('list')}
+      className={`
+        min-h-9 px-4 py-2 text-sm font-medium
+        transition-colors motion-reduce:transition-none
+        focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-[-2px]
+        ${viewMode === 'list'
+          ? 'bg-accent text-white'
+          : 'bg-bg-secondary text-text-secondary hover:bg-bg-hover'
+        }
+      `}
+      role="radio"
+      aria-checked={viewMode === 'list'}
+    >
+      List
+    </button>
+    <button
+      onClick={() => onChange('graph')}
+      className={`
+        min-h-9 px-4 py-2 text-sm font-medium
+        transition-colors motion-reduce:transition-none
+        focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-[-2px]
+        ${viewMode === 'graph'
+          ? 'bg-accent text-white'
+          : 'bg-bg-secondary text-text-secondary hover:bg-bg-hover'
+        }
+      `}
+      role="radio"
+      aria-checked={viewMode === 'graph'}
+    >
+      Graph
+    </button>
+  </div>
+);
+
+// ============================================
 // Stats Header Component
 // ============================================
 
-const LoadOrderHeader: React.FC<LoadOrderHeaderProps> = ({ stats, cached }) => (
+const LoadOrderHeader: React.FC<LoadOrderHeaderProps> = ({
+  stats,
+  cached,
+  viewMode,
+  onViewModeChange,
+}) => (
   <header className="p-6 rounded-sm bg-bg-card border border-border">
-    <div className="flex items-start justify-between gap-4 mb-4">
+    <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
       <h2 className="text-xl font-bold text-text-primary">Load Order Analysis</h2>
-      <span
-        className={`px-3 py-1 rounded-full text-xs font-medium ${
-          cached
-            ? 'bg-accent/20 text-accent'
-            : 'bg-text-muted/20 text-text-secondary'
-        }`}
-      >
-        {cached ? 'Cached' : 'Fresh'}
-      </span>
+      <div className="flex items-center gap-3">
+        <ViewModeToggle viewMode={viewMode} onChange={onViewModeChange} />
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-medium ${
+            cached
+              ? 'bg-accent/20 text-accent'
+              : 'bg-text-muted/20 text-text-secondary'
+          }`}
+        >
+          {cached ? 'Cached' : 'Fresh'}
+        </span>
+      </div>
     </div>
     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
       <StatItem label="Total Plugins" value={stats.totalPlugins} />
@@ -562,6 +626,7 @@ const WarningPanel: React.FC<WarningPanelProps> = ({ issues, onSelectIssue }) =>
 export const LoadOrderView: React.FC<LoadOrderViewProps> = ({ slug, revision }) => {
   const { data, isLoading, error, refetch } = useLoadOrderAnalysis(slug, revision);
   const [selectedPlugin, setSelectedPlugin] = useState<LoadOrderPluginInfo | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   // Build map of plugin issues
   const issues = data?.issues;
@@ -606,38 +671,71 @@ export const LoadOrderView: React.FC<LoadOrderViewProps> = ({ slug, revision }) 
         with {data.stats.totalIssues} issues.
       </div>
 
-      {/* Stats header */}
-      <LoadOrderHeader stats={data.stats} cached={data.cached} />
+      {/* Stats header with view mode toggle */}
+      <LoadOrderHeader
+        stats={data.stats}
+        cached={data.cached}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+      />
 
-      {/* Main content area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Plugin list */}
-        <div className="lg:col-span-2">
-          <LoadOrderList
-            plugins={data.plugins}
-            selectedPlugin={selectedPlugin}
-            onSelectPlugin={setSelectedPlugin}
-            pluginIssues={pluginIssues}
+      {/* View mode: Graph */}
+      {viewMode === 'graph' && (
+        <DependencyGraphView
+          plugins={data.plugins}
+          dependencyGraph={data.dependencyGraph}
+          issues={data.issues}
+          selectedPlugin={selectedPlugin}
+          onSelectPlugin={setSelectedPlugin}
+        />
+      )}
+
+      {/* View mode: List */}
+      {viewMode === 'list' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Plugin list */}
+          <div className="lg:col-span-2">
+            <LoadOrderList
+              plugins={data.plugins}
+              selectedPlugin={selectedPlugin}
+              onSelectPlugin={setSelectedPlugin}
+              pluginIssues={pluginIssues}
+            />
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Plugin details or warning panel */}
+            {selectedPlugin ? (
+              <LoadOrderDetails
+                plugin={selectedPlugin}
+                issues={pluginIssues.get(selectedPlugin.filename) ?? []}
+                dependencyGraph={data.dependencyGraph}
+              />
+            ) : (
+              <WarningPanel
+                issues={data.issues}
+                onSelectIssue={handleSelectIssue}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Show details panel below graph when a plugin is selected */}
+      {viewMode === 'graph' && selectedPlugin && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <LoadOrderDetails
+            plugin={selectedPlugin}
+            issues={pluginIssues.get(selectedPlugin.filename) ?? []}
+            dependencyGraph={data.dependencyGraph}
+          />
+          <WarningPanel
+            issues={data.issues}
+            onSelectIssue={handleSelectIssue}
           />
         </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Plugin details or warning panel */}
-          {selectedPlugin ? (
-            <LoadOrderDetails
-              plugin={selectedPlugin}
-              issues={pluginIssues.get(selectedPlugin.filename) ?? []}
-              dependencyGraph={data.dependencyGraph}
-            />
-          ) : (
-            <WarningPanel
-              issues={data.issues}
-              onSelectIssue={handleSelectIssue}
-            />
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 };
