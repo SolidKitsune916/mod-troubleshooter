@@ -231,7 +231,33 @@
 
 ## Completed
 
-<!-- Move completed tasks here -->
+- [x] **US-001**: Initialize Go module and project structure
+- [x] **US-002**: Implement basic HTTP server with health endpoint
+- [x] **US-003**: Create configuration management
+- [x] **US-004**: Implement Nexus GraphQL client
+- [x] **US-005**: Implement collection fetching endpoint
+- [x] **US-006**: Set up new frontend project structure
+- [x] **US-007**: Create API service layer
+- [x] **US-008**: Migrate collection browser to use Go backend
+- [x] **US-009**: Add settings page for API key
+- [x] **US-010**: Implement Nexus download link fetching
+- [x] **US-011**: Implement archive downloader
+- [x] **US-012**: Implement archive extractor
+  - Support for .zip, .7z, .rar via mholt/archiver/v4
+  - Path-specific extraction (fomod/ directory)
+  - File size limits and zip slip protection
+  - ListFiles and HasFomod helper methods
+- [x] **US-013**: Implement FOMOD XML parser
+  - Parse info.xml for mod metadata (name, author, version, description, website)
+  - Parse ModuleConfig.xml with full FOMOD schema support
+  - Handle all FOMOD elements: installSteps, optionalFileGroups, groups, plugins
+  - Support all group types: SelectExactlyOne, SelectAtMostOne, SelectAtLeastOne, SelectAny, SelectAll
+  - Support all plugin types: Required, Optional, Recommended, NotUsable, CouldBeUsable
+  - Parse condition flags and dependency-based type descriptors
+  - Parse composite dependencies (And/Or with file, flag, game, fomm dependencies)
+  - Parse conditional file installs
+  - Case-insensitive directory and filename handling
+  - Support for different XML encodings via x/net/html/charset
 
 ## Discovered Issues
 

@@ -1,6 +1,6 @@
 module github.com/mod-troubleshooter/backend
 
-go 1.22.2
+go 1.24.0
 
 require github.com/rs/cors v1.10.1
 
@@ -24,5 +24,6 @@ require (
 	github.com/therootcompany/xz v1.0.1 // indirect
 	github.com/ulikunitz/xz v0.5.12 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
-	golang.org/x/text v0.19.0 // indirect
+	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 )
