@@ -4,3 +4,4 @@ export {
   fetchCollectionRevisions,
   fetchCollectionRevisionMods,
 } from './collectionService.ts';
+export { analyzeFomod } from './fomodService.ts';
