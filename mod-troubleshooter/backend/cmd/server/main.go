@@ -95,6 +95,10 @@ func main() {
 	mux.HandleFunc("GET /api/collections/{slug}/revisions", collectionHandler.GetCollectionRevisions)
 	mux.HandleFunc("GET /api/collections/{slug}/revisions/{revision}", collectionHandler.GetCollectionRevisionMods)
 
+	// Download endpoints (requires Premium)
+	downloadHandler := handlers.NewDownloadHandler(clientMgr)
+	mux.HandleFunc("GET /api/games/{game}/mods/{modId}/files/{fileId}/download", downloadHandler.GetModFileDownloadLinks)
+
 	// Configure CORS for React frontend
 	c := cors.New(cors.Options{
 		AllowedOrigins:   cfg.CORSOrigins,

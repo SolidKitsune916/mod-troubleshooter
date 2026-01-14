@@ -16,12 +16,14 @@ import (
 
 // Common errors returned by the client.
 var (
-	ErrNoAPIKey      = errors.New("nexus API key is required")
-	ErrUnauthorized  = errors.New("invalid or expired API key")
-	ErrRateLimited   = errors.New("rate limit exceeded")
-	ErrNotFound      = errors.New("resource not found")
-	ErrServerError   = errors.New("nexus server error")
-	ErrGraphQLErrors = errors.New("graphql query returned errors")
+	ErrNoAPIKey       = errors.New("nexus API key is required")
+	ErrUnauthorized   = errors.New("invalid or expired API key")
+	ErrRateLimited    = errors.New("rate limit exceeded")
+	ErrNotFound       = errors.New("resource not found")
+	ErrServerError    = errors.New("nexus server error")
+	ErrGraphQLErrors  = errors.New("graphql query returned errors")
+	ErrPremiumOnly    = errors.New("this feature requires a Nexus Mods Premium account")
+	ErrForbidden      = errors.New("access forbidden")
 )
 
 // ClientConfig holds configuration for the Nexus client.
@@ -371,4 +373,92 @@ func (c *Client) ValidateAPIKey(ctx context.Context) (bool, error) {
 	}
 
 	return resp.CurrentUser != nil, nil
+}
+
+// GetModFileDownloadLinks fetches download links for a mod file.
+// This requires a Nexus Mods Premium account.
+func (c *Client) GetModFileDownloadLinks(ctx context.Context, gameDomain string, modID, fileID int) ([]DownloadLink, error) {
+	url := fmt.Sprintf("%s/games/%s/mods/%d/files/%d/download_link.json",
+		RESTAPIBase, gameDomain, modID, fileID)
+
+	var lastErr error
+	for attempt := 0; attempt <= c.maxRetries; attempt++ {
+		if attempt > 0 {
+			backoff := c.calculateBackoff(attempt)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(backoff):
+			}
+		}
+
+		// Enforce rate limiting
+		if err := c.waitForRateLimit(ctx); err != nil {
+			return nil, err
+		}
+
+		links, err := c.doRESTRequest(ctx, url)
+		if err != nil {
+			lastErr = err
+			if isRetryable(err) {
+				continue
+			}
+			return nil, err
+		}
+
+		return links, nil
+	}
+
+	return nil, fmt.Errorf("max retries exceeded: %w", lastErr)
+}
+
+// doRESTRequest performs an HTTP GET request to the REST API.
+func (c *Client) doRESTRequest(ctx context.Context, url string) ([]DownloadLink, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	req.Header.Set("apikey", c.apiKey)
+	req.Header.Set("User-Agent", "ModTroubleshooter/1.0")
+	req.Header.Set("Accept", "application/json")
+
+	c.mu.Lock()
+	c.lastRequest = time.Now()
+	c.mu.Unlock()
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Parse rate limit headers
+	c.parseRateLimitHeaders(resp)
+
+	// Handle error status codes
+	switch resp.StatusCode {
+	case http.StatusOK:
+		// Parse successful response
+		var links []DownloadLink
+		if err := json.NewDecoder(resp.Body).Decode(&links); err != nil {
+			return nil, fmt.Errorf("decode response: %w", err)
+		}
+		return links, nil
+	case http.StatusUnauthorized:
+		return nil, ErrUnauthorized
+	case http.StatusForbidden:
+		// Nexus returns 403 for non-premium users trying to access download links
+		return nil, ErrPremiumOnly
+	case http.StatusTooManyRequests:
+		return nil, ErrRateLimited
+	case http.StatusNotFound:
+		return nil, ErrNotFound
+	default:
+		if resp.StatusCode >= 500 {
+			return nil, fmt.Errorf("%w: status %d", ErrServerError, resp.StatusCode)
+		}
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))
+	}
 }

@@ -72,10 +72,10 @@
 
 ### Backend - Archive Processing
 
-- [ ] **US-010**: Implement Nexus download link fetching
-  - `GET /api/mods/:gameId/:modId/files/:fileId/download`
-  - Handle Premium-only restriction
-  - Return download URLs
+- [x] **US-010**: Implement Nexus download link fetching
+  - `GET /api/games/{game}/mods/{modId}/files/{fileId}/download`
+  - Handle Premium-only restriction (returns 403 with clear message)
+  - Return download URLs array
   - Priority: 10
 
 - [ ] **US-011**: Implement archive downloader
@@ -283,6 +283,15 @@
   - Added navigation between Collections and Settings pages
   - Features: key validation before save, masked key display, show/hide toggle, clear key option
   - Fixed API response envelope schema mismatch between frontend and backend
+
+- [x] **US-010**: Implement Nexus download link fetching
+  - Added `DownloadLink` and `DownloadLinksResponse` types to `internal/nexus/types.go`
+  - Added `RESTAPIBase` constant for Nexus v1 REST API
+  - Added `ErrPremiumOnly` and `ErrForbidden` errors to nexus client
+  - Implemented `GetModFileDownloadLinks` method in nexus client using REST API endpoint
+  - Created `internal/handlers/download.go` with `DownloadHandler` and `GetModFileDownloadLinks` handler
+  - Registered `GET /api/games/{game}/mods/{modId}/files/{fileId}/download` endpoint
+  - Returns 403 with clear message for non-Premium accounts
 
 ## Discovered Issues
 

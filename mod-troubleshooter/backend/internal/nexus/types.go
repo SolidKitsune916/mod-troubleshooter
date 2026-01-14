@@ -2,8 +2,11 @@ package nexus
 
 import "time"
 
-// GraphQL API endpoint
-const GraphQLEndpoint = "https://api.nexusmods.com/v2/graphql"
+// API endpoints
+const (
+	GraphQLEndpoint = "https://api.nexusmods.com/v2/graphql"
+	RESTAPIBase     = "https://api.nexusmods.com/v1"
+)
 
 // Collection represents a Nexus Mods collection.
 type Collection struct {
@@ -147,3 +150,13 @@ type RateLimitInfo struct {
 	DailyLimit      int
 	DailyRemaining  int
 }
+
+// DownloadLink represents a download URL returned by the Nexus API.
+type DownloadLink struct {
+	Name      string `json:"name"`
+	ShortName string `json:"short_name"`
+	URI       string `json:"URI"`
+}
+
+// DownloadLinksResponse wraps the download links array from the REST API.
+type DownloadLinksResponse []DownloadLink
