@@ -1,0 +1,153 @@
+---
+description: Apply WCAG 2.2 AA accessibility standards to all UI code
+globs: ["src/**/*.tsx", "src/**/*.css"]
+---
+# WCAG 2.2 Accessibility Standards
+
+## Context
+- All UI must meet WCAG 2.2 AA compliance
+- Accessibility is non-negotiable, not an afterthought
+- Test with keyboard navigation and screen readers
+
+## Requirements
+
+### Perceivable (1.x)
+
+**Text Alternatives**
+- Informative images: descriptive alt text
+- Decorative images: alt=""
+- Icon buttons: aria-label="Action description"
+- Complex images: use figcaption for extended description
+
+**Color & Contrast**
+- Normal text: 4.5:1 minimum contrast ratio
+- Large text (18px+): 3:1 minimum contrast ratio
+- UI components: 3:1 minimum contrast ratio
+- Never use color alone to convey meaning (add icons/text)
+
+**Adaptable Content**
+- Proper heading hierarchy (h1 â†’ h2 â†’ h3)
+- Use semantic landmarks: nav, main, aside, footer
+- Tables need caption and proper th scope attributes
+- Use lists (ul, ol) for list content
+
+### Operable (2.x)
+
+**Keyboard Accessible**
+- All functionality available via keyboard
+- No keyboard traps - Escape closes modals
+- Visible focus indicators (never outline: none without replacement)
+- Tab order follows logical visual order
+
+**Timing & Motion**
+- Auto-playing content must be pausable
+- Respect prefers-reduced-motion preference
+- No content flashing more than 3 times per second
+
+**Navigation**
+- Skip link as first focusable element
+- Descriptive page titles
+- Link text describes destination (not "click here")
+- Focus not obscured by sticky elements
+
+**Target Size (WCAG 2.2)**
+- Minimum touch targets: 24Ã—24px
+- Recommended touch targets: 44Ã—44px
+- Adequate spacing between targets
+
+### Understandable (3.x)
+
+**Language**
+- Set lang attribute on html element
+- Mark language changes with lang attribute
+
+**Predictable**
+- No unexpected context changes on focus
+- Consistent navigation across pages
+- Same functions labeled consistently
+
+**Input Assistance**
+- Errors identified and described in text
+- Labels and instructions provided
+- Error suggestions when known
+- Confirmation for important submissions
+
+## Required CSS
+
+```css
+/* Always include in global styles */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+```
+
+## Examples
+
+<example>
+```tsx
+// Good - Accessible modal with proper focus management
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+  const headingId = useId();
+  const previousFocus = useRef<HTMLElement | null>(null);
+  
+  useEffect(() => {
+    if (isOpen) {
+      previousFocus.current = document.activeElement as HTMLElement;
+    } else {
+      previousFocus.current?.focus();
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div 
+      role="dialog" 
+      aria-modal="true" 
+      aria-labelledby={headingId}
+      onKeyDown={e => e.key === 'Escape' && onClose()}
+    >
+      <h2 id={headingId}>{title}</h2>
+      {children}
+      <button onClick={onClose} aria-label="Close dialog">Ã—</button>
+    </div>
+  );
+};
+```
+</example>
+
+<example type="invalid">
+```tsx
+// Bad - Inaccessible modal
+const Modal = ({ show, onClose, children }) => (
+  show && (
+    <div className="modal">
+      <span onClick={onClose}>Ã—</span>
+      {children}
+    </div>
+  )
+);
+```
+</example>

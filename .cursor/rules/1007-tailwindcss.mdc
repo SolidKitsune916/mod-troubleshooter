@@ -1,0 +1,148 @@
+---
+description: Follow Tailwind CSS v4 standards when writing styles
+globs: ["src/**/*.tsx", "src/**/*.css", "*.css"]
+---
+# Tailwind CSS v4 Standards
+
+## Context
+- Tailwind CSS v4 with CSS-first configuration
+- Vite plugin: @tailwindcss/vite
+- WCAG 2.2 color contrast requirements
+
+## Core Changes from v3
+
+### CSS Configuration
+```css
+/* Use @import instead of @tailwind directives */
+@import "tailwindcss";
+
+/* CSS-first theme configuration */
+@theme {
+  --font-display: "Inter", sans-serif;
+  --color-primary: oklch(0.6 0.2 250);
+  --spacing: 0.25rem;
+}
+
+/* Legacy config support */
+@config "../../tailwind.config.js";
+```
+
+### Renamed Utilities
+- `shadow-sm` → `shadow-xs`, `shadow` → `shadow-sm`
+- `blur-sm` → `blur-xs`, `blur` → `blur-sm`  
+- `rounded-sm` → `rounded-xs`, `rounded` → `rounded-sm`
+- `outline-none` → `outline-hidden`
+
+### Removed Utilities
+- Use color opacity syntax: `bg-black/50` not `bg-opacity-50`
+- Use CSS variables in arbitrary values: `bg-(--brand)` not `bg-[--brand]`
+
+## Requirements
+
+### Accessibility
+- Ensure text meets 4.5:1 contrast ratio (3:1 for large text)
+- Use focus-visible for keyboard-only focus styles
+- Add reduced motion styles for all animations
+- Minimum touch targets: 44×44px (min-h-11 min-w-11)
+
+### Dark Mode
+- Use `dark:` prefix for dark mode variants
+- Configure with @variant if needed:
+  ```css
+  @variant dark (&:where(.dark, .dark *));
+  ```
+
+### Responsive Design
+- Mobile-first approach: base styles for mobile
+- Use container queries: `@container`, `@sm:`, `@md:`
+- Handle safe areas: `pl-[env(safe-area-inset-left)]`
+
+### Best Practices
+- Use semantic spacing scale (4, 8, 12, 16, 24, 32, 48)
+- Group related utilities logically
+- Use @utility for custom utilities, @variant for custom variants
+- Use component classes for repeated patterns
+
+## Required Styles
+
+```css
+@import "tailwindcss";
+
+@theme {
+  --color-focus: oklch(0.6 0.2 250);
+}
+
+/* Accessibility utilities */
+@utility sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus visible */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+```
+
+## Examples
+
+<example>
+```tsx
+// Good - Accessible button with proper states
+<button
+  className="
+    min-h-11 min-w-11 px-4 py-2
+    bg-primary text-white rounded-sm
+    hover:bg-primary/90
+    focus-visible:outline-3 focus-visible:outline-primary focus-visible:outline-offset-2
+    disabled:opacity-50 disabled:cursor-not-allowed
+    transition-colors motion-reduce:transition-none
+  "
+>
+  Submit
+</button>
+
+// Good - Dark mode support
+<div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+  Content
+</div>
+
+// Good - Responsive with container queries
+<div className="@container">
+  <div className="grid grid-cols-1 @md:grid-cols-2 @lg:grid-cols-3 gap-4">
+    {/* items */}
+  </div>
+</div>
+```
+</example>
+
+<example type="invalid">
+```tsx
+// Bad - Old v3 syntax, no accessibility
+<button className="bg-blue-500 bg-opacity-50 rounded-sm shadow-sm">
+  Click
+</button>
+
+// Bad - No dark mode, no focus states
+<input className="border p-2 outline-none" />
+```
+</example>

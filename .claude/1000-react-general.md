@@ -1,0 +1,84 @@
+---
+description: Follow Vite + React 19 + TypeScript conventions and patterns
+globs: ["src/**/*.{ts,tsx}", "*.config.{ts,js}"]
+---
+# Vite + React + TypeScript Conventions
+
+## Context
+- Vite-powered React 19 application with TypeScript
+- Modern React patterns with hooks
+- Strict TypeScript configuration
+
+## Requirements
+
+### General
+- Use functional components with hooks exclusively
+- Use TypeScript strict mode - never use `any` type
+- Use absolute imports with path aliases (@components/*, @hooks/*, @utils/*)
+- Follow single responsibility principle - components under 150 lines
+- Add JSDoc documentation to exported functions and components
+
+### Import Order
+1. React and core libraries
+2. Third-party libraries  
+3. Internal modules (absolute imports)
+4. Types (use `import type`)
+5. Styles
+
+### Component Structure
+- Define interface for props at top of file
+- Use discriminated unions for complex state, not boolean flags
+- Prefer composition over prop drilling (use Context after 3+ levels)
+- Always clean up effects - return cleanup function from useEffect
+- Memoize only when measured performance issues exist
+
+### Accessibility (WCAG 2.2)
+- Use semantic HTML elements (button, a, nav, main, article)
+- Every interactive element must be keyboard accessible
+- Every image needs alt text (informative or empty for decorative)
+- Every form input needs an associated label
+- Minimum touch targets: 44×44px
+- Focus indicators must be visible on all interactive elements
+
+## Examples
+
+<example>
+```tsx
+// Good - Proper component with types and accessibility
+import { useState, useCallback } from 'react';
+import { Button } from '@components/Button';
+import type { User } from '@types/user';
+
+interface UserCardProps {
+  user: User;
+  onSelect?: (user: User) => void;
+}
+
+/** Displays user information in a card format */
+export const UserCard: React.FC<UserCardProps> = ({ user, onSelect }) => {
+  const handleClick = useCallback(() => onSelect?.(user), [user, onSelect]);
+  
+  return (
+    <article aria-labelledby={`user-${user.id}`}>
+      <h3 id={`user-${user.id}`}>{user.name}</h3>
+      <p>{user.email}</p>
+      <Button onClick={handleClick}>Select</Button>
+    </article>
+  );
+};
+```
+</example>
+
+<example type="invalid">
+```tsx
+// Bad - Missing types, poor accessibility, any usage
+const UserCard = (props: any) => {
+  return (
+    <div onClick={() => props.onSelect(props.user)}>
+      <span style={{fontSize: '20px'}}>{props.user.name}</span>
+      <img src={props.user.avatar} />
+    </div>
+  );
+};
+```
+</example>

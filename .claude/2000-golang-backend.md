@@ -1,0 +1,968 @@
+---
+description: Follow Go backend standards when creating APIs for Vite+React+TypeScript frontends
+globs: ["**/*.go", "go.mod", "go.sum"]
+---
+# Go Backend Standards for React Frontends
+
+## Context
+- Go backend serving REST APIs for Vite+React+TypeScript frontends
+- Standard library preferred, frameworks when needed (Gin, Chi, Echo)
+- JSON API communication with proper CORS handling
+- Follows Go idioms and conventions
+
+## 🤖 Key Rules for AI-Assisted Development
+
+**When generating Go backend code, always apply these rules:**
+
+1. **Use explicit error handling** - Never ignore errors. Check every error and handle appropriately.
+
+2. **Return structured JSON responses** - Use consistent response envelopes with `data`, `error`, and `message` fields.
+
+3. **Configure CORS properly** - Enable CORS middleware for React dev server (typically `localhost:5173`).
+
+4. **Use context for cancellation** - Pass `context.Context` as first parameter, respect cancellation signals.
+
+5. **Define explicit types** - Create structs for all request/response bodies, never use `map[string]interface{}` for known structures.
+
+6. **Validate all inputs** - Validate request bodies before processing, return 400 for validation errors.
+
+7. **Use proper HTTP status codes** - 200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Internal Server Error.
+
+8. **Log errors with context** - Use structured logging with request IDs for debugging.
+
+9. **Set timeouts on servers** - Configure ReadTimeout, WriteTimeout, IdleTimeout on http.Server.
+
+10. **Close resources properly** - Use `defer` for cleanup, close database connections and response bodies.
+
+---
+
+## Project Structure
+
+### Recommended Layout
+
+```
+myapi/
+├── cmd/
+│   └── server/
+│       └── main.go          # Entry point
+├── internal/
+│   ├── config/
+│   │   └── config.go        # Configuration loading
+│   ├── handlers/
+│   │   ├── handlers.go      # HTTP handlers
+│   │   └── middleware.go    # Middleware (CORS, auth, logging)
+│   ├── models/
+│   │   └── models.go        # Data structures
+│   ├── repository/
+│   │   └── repository.go    # Database operations
+│   └── services/
+│       └── services.go      # Business logic
+├── pkg/                     # Public reusable packages (optional)
+├── api/
+│   └── openapi.yaml         # API specification (optional)
+├── go.mod
+├── go.sum
+├── Makefile
+└── README.md
+```
+
+### Key Directories
+
+| Directory | Purpose |
+|-----|---|
+| `cmd/` | Application entry points |
+| `internal/` | Private application code (enforced by Go compiler) |
+| `internal/handlers/` | HTTP request handlers |
+| `internal/models/` | Data structures and types |
+| `internal/repository/` | Database access layer |
+| `internal/services/` | Business logic layer |
+| `pkg/` | Public packages (importable by other projects) |
+
+---
+
+## HTTP Server Setup
+
+### Basic Server with Timeouts
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+    "net/http"
+    "os"
+    "os/signal"
+    "syscall"
+    "time"
+)
+
+func main() {
+    mux := http.NewServeMux()
+    
+    // Register routes
+    mux.HandleFunc("GET /api/health", healthHandler)
+    mux.HandleFunc("GET /api/users", getUsersHandler)
+    mux.HandleFunc("POST /api/users", createUserHandler)
+    mux.HandleFunc("GET /api/users/{id}", getUserHandler)
+    mux.HandleFunc("PUT /api/users/{id}", updateUserHandler)
+    mux.HandleFunc("DELETE /api/users/{id}", deleteUserHandler)
+
+    // ✅ Always configure timeouts
+    server := &http.Server{
+        Addr:         ":8080",
+        Handler:      enableCORS(mux),
+        ReadTimeout:  15 * time.Second,
+        WriteTimeout: 15 * time.Second,
+        IdleTimeout:  60 * time.Second,
+    }
+
+    // Graceful shutdown
+    go func() {
+        log.Printf("Server starting on %s", server.Addr)
+        if err := server.ListenAndServe(); err != http.ErrServerClosed {
+            log.Fatalf("Server error: %v", err)
+        }
+    }()
+
+    // Wait for interrupt signal
+    quit := make(chan os.Signal, 1)
+    signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+    <-quit
+
+    log.Println("Shutting down server...")
+    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+    defer cancel()
+    
+    if err := server.Shutdown(ctx); err != nil {
+        log.Fatalf("Server shutdown error: %v", err)
+    }
+    log.Println("Server stopped")
+}
+```
+
+---
+
+## CORS Middleware
+
+### For React Development (localhost:5173)
+
+```go
+// ✅ Production-ready CORS middleware
+func enableCORS(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        origin := r.Header.Get("Origin")
+        
+        // Allowed origins for development and production
+        allowedOrigins := map[string]bool{
+            "http://localhost:5173":  true, // Vite dev server
+            "http://localhost:3000":  true, // Alternative dev port
+            "https://yourdomain.com": true, // Production
+        }
+
+        if allowedOrigins[origin] {
+            w.Header().Set("Access-Control-Allow-Origin", origin)
+            w.Header().Set("Access-Control-Allow-Credentials", "true")
+        }
+
+        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+        w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
+        w.Header().Set("Access-Control-Expose-Headers", "Link, X-Total-Count")
+        w.Header().Set("Access-Control-Max-Age", "300")
+
+        // Handle preflight requests
+        if r.Method == http.MethodOptions {
+            w.WriteHeader(http.StatusNoContent)
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    })
+}
+```
+
+### Using rs/cors Package (Recommended for Production)
+
+```go
+import "github.com/rs/cors"
+
+func main() {
+    mux := http.NewServeMux()
+    // ... register routes
+
+    c := cors.New(cors.Options{
+        AllowedOrigins:   []string{"http://localhost:5173", "https://yourdomain.com"},
+        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+        AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+        AllowCredentials: true,
+        MaxAge:           300,
+    })
+
+    handler := c.Handler(mux)
+    http.ListenAndServe(":8080", handler)
+}
+```
+
+---
+
+## JSON Response Patterns
+
+### Standard Response Envelope
+
+```go
+// ✅ Consistent response structures
+type Response struct {
+    Data    interface{} `json:"data,omitempty"`
+    Error   string      `json:"error,omitempty"`
+    Message string      `json:"message,omitempty"`
+}
+
+type PaginatedResponse struct {
+    Data       interface{} `json:"data"`
+    Total      int         `json:"total"`
+    Page       int         `json:"page"`
+    PerPage    int         `json:"per_page"`
+    TotalPages int         `json:"total_pages"`
+}
+
+// Helper functions
+func writeJSON(w http.ResponseWriter, status int, data interface{}) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(status)
+    json.NewEncoder(w).Encode(Response{Data: data})
+}
+
+func writeError(w http.ResponseWriter, status int, message string) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(status)
+    json.NewEncoder(w).Encode(Response{Error: message})
+}
+
+func writeSuccess(w http.ResponseWriter, message string) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(Response{Message: message})
+}
+```
+
+### Handler Example
+
+```go
+func getUserHandler(w http.ResponseWriter, r *http.Request) {
+    // Go 1.22+ path value extraction
+    id := r.PathValue("id")
+    if id == "" {
+        writeError(w, http.StatusBadRequest, "User ID is required")
+        return
+    }
+
+    user, err := userService.GetByID(r.Context(), id)
+    if err != nil {
+        if errors.Is(err, ErrNotFound) {
+            writeError(w, http.StatusNotFound, "User not found")
+            return
+        }
+        log.Printf("Error fetching user %s: %v", id, err)
+        writeError(w, http.StatusInternalServerError, "Failed to fetch user")
+        return
+    }
+
+    writeJSON(w, http.StatusOK, user)
+}
+```
+
+---
+
+## Request Validation
+
+### Validating Request Bodies
+
+```go
+import "github.com/go-playground/validator/v10"
+
+var validate = validator.New()
+
+// ✅ Request struct with validation tags
+type CreateUserRequest struct {
+    Email    string `json:"email" validate:"required,email"`
+    Name     string `json:"name" validate:"required,min=2,max=100"`
+    Password string `json:"password" validate:"required,min=8"`
+    Role     string `json:"role" validate:"omitempty,oneof=admin user guest"`
+}
+
+func createUserHandler(w http.ResponseWriter, r *http.Request) {
+    var req CreateUserRequest
+    
+    // Decode JSON body
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        writeError(w, http.StatusBadRequest, "Invalid JSON body")
+        return
+    }
+
+    // Validate struct
+    if err := validate.Struct(req); err != nil {
+        // Format validation errors for frontend
+        var errors []string
+        for _, err := range err.(validator.ValidationErrors) {
+            errors = append(errors, formatValidationError(err))
+        }
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusBadRequest)
+        json.NewEncoder(w).Encode(map[string]interface{}{
+            "error":  "Validation failed",
+            "fields": errors,
+        })
+        return
+    }
+
+    // Process valid request...
+}
+
+func formatValidationError(err validator.FieldError) string {
+    switch err.Tag() {
+    case "required":
+        return fmt.Sprintf("%s is required", err.Field())
+    case "email":
+        return fmt.Sprintf("%s must be a valid email", err.Field())
+    case "min":
+        return fmt.Sprintf("%s must be at least %s characters", err.Field(), err.Param())
+    case "max":
+        return fmt.Sprintf("%s must be at most %s characters", err.Field(), err.Param())
+    default:
+        return fmt.Sprintf("%s is invalid", err.Field())
+    }
+}
+```
+
+---
+
+## Error Handling
+
+### Custom Error Types
+
+```go
+// ✅ Domain errors for clean error handling
+var (
+    ErrNotFound     = errors.New("resource not found")
+    ErrUnauthorized = errors.New("unauthorized")
+    ErrForbidden    = errors.New("forbidden")
+    ErrConflict     = errors.New("resource already exists")
+    ErrValidation   = errors.New("validation failed")
+)
+
+// Wrap errors with context
+func (r *UserRepository) GetByID(ctx context.Context, id string) (*User, error) {
+    user, err := r.db.GetUser(ctx, id)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return nil, fmt.Errorf("user %s: %w", id, ErrNotFound)
+        }
+        return nil, fmt.Errorf("fetching user %s: %w", id, err)
+    }
+    return user, nil
+}
+
+// Handler error mapping
+func handleError(w http.ResponseWriter, err error) {
+    switch {
+    case errors.Is(err, ErrNotFound):
+        writeError(w, http.StatusNotFound, err.Error())
+    case errors.Is(err, ErrUnauthorized):
+        writeError(w, http.StatusUnauthorized, "Authentication required")
+    case errors.Is(err, ErrForbidden):
+        writeError(w, http.StatusForbidden, "Access denied")
+    case errors.Is(err, ErrConflict):
+        writeError(w, http.StatusConflict, err.Error())
+    case errors.Is(err, ErrValidation):
+        writeError(w, http.StatusBadRequest, err.Error())
+    default:
+        log.Printf("Internal error: %v", err)
+        writeError(w, http.StatusInternalServerError, "Internal server error")
+    }
+}
+```
+
+---
+
+## Middleware Patterns
+
+### Logging Middleware
+
+```go
+func loggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        start := time.Now()
+        
+        // Wrap response writer to capture status code
+        wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+        
+        next.ServeHTTP(wrapped, r)
+        
+        log.Printf(
+            "%s %s %d %s",
+            r.Method,
+            r.URL.Path,
+            wrapped.statusCode,
+            time.Since(start),
+        )
+    })
+}
+
+type responseWriter struct {
+    http.ResponseWriter
+    statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+    rw.statusCode = code
+    rw.ResponseWriter.WriteHeader(code)
+}
+```
+
+### Authentication Middleware
+
+```go
+func authMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        token := r.Header.Get("Authorization")
+        if token == "" {
+            writeError(w, http.StatusUnauthorized, "Authorization header required")
+            return
+        }
+
+        // Remove "Bearer " prefix
+        token = strings.TrimPrefix(token, "Bearer ")
+
+        // Validate token (implement your auth logic)
+        userID, err := validateToken(token)
+        if err != nil {
+            writeError(w, http.StatusUnauthorized, "Invalid or expired token")
+            return
+        }
+
+        // Add user ID to context
+        ctx := context.WithValue(r.Context(), "userID", userID)
+        next.ServeHTTP(w, r.WithContext(ctx))
+    })
+}
+
+// Usage
+mux.Handle("GET /api/protected", authMiddleware(http.HandlerFunc(protectedHandler)))
+```
+
+### Request ID Middleware
+
+```go
+import "github.com/google/uuid"
+
+type contextKey string
+
+const RequestIDKey contextKey = "requestID"
+
+func requestIDMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        requestID := r.Header.Get("X-Request-ID")
+        if requestID == "" {
+            requestID = uuid.New().String()
+        }
+        
+        w.Header().Set("X-Request-ID", requestID)
+        ctx := context.WithValue(r.Context(), RequestIDKey, requestID)
+        next.ServeHTTP(w, r.WithContext(ctx))
+    })
+}
+```
+
+---
+
+## Database Integration
+
+### Repository Pattern with PostgreSQL
+
+```go
+import (
+    "context"
+    "database/sql"
+    _ "github.com/lib/pq"
+)
+
+type User struct {
+    ID        string    `json:"id"`
+    Email     string    `json:"email"`
+    Name      string    `json:"name"`
+    CreatedAt time.Time `json:"created_at"`
+    UpdatedAt time.Time `json:"updated_at"`
+}
+
+type UserRepository struct {
+    db *sql.DB
+}
+
+func NewUserRepository(db *sql.DB) *UserRepository {
+    return &UserRepository{db: db}
+}
+
+func (r *UserRepository) GetByID(ctx context.Context, id string) (*User, error) {
+    query := `SELECT id, email, name, created_at, updated_at FROM users WHERE id = $1`
+    
+    var user User
+    err := r.db.QueryRowContext(ctx, query, id).Scan(
+        &user.ID,
+        &user.Email,
+        &user.Name,
+        &user.CreatedAt,
+        &user.UpdatedAt,
+    )
+    if err == sql.ErrNoRows {
+        return nil, ErrNotFound
+    }
+    if err != nil {
+        return nil, fmt.Errorf("query user: %w", err)
+    }
+    return &user, nil
+}
+
+func (r *UserRepository) Create(ctx context.Context, user *User) error {
+    query := `
+        INSERT INTO users (id, email, name, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5)
+    `
+    _, err := r.db.ExecContext(ctx, query,
+        user.ID, user.Email, user.Name, user.CreatedAt, user.UpdatedAt,
+    )
+    if err != nil {
+        // Check for unique constraint violation
+        if strings.Contains(err.Error(), "unique constraint") {
+            return ErrConflict
+        }
+        return fmt.Errorf("insert user: %w", err)
+    }
+    return nil
+}
+
+func (r *UserRepository) List(ctx context.Context, page, perPage int) ([]User, int, error) {
+    offset := (page - 1) * perPage
+
+    // Get total count
+    var total int
+    err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM users").Scan(&total)
+    if err != nil {
+        return nil, 0, fmt.Errorf("count users: %w", err)
+    }
+
+    // Get paginated results
+    query := `
+        SELECT id, email, name, created_at, updated_at 
+        FROM users 
+        ORDER BY created_at DESC 
+        LIMIT $1 OFFSET $2
+    `
+    rows, err := r.db.QueryContext(ctx, query, perPage, offset)
+    if err != nil {
+        return nil, 0, fmt.Errorf("query users: %w", err)
+    }
+    defer rows.Close()
+
+    var users []User
+    for rows.Next() {
+        var user User
+        if err := rows.Scan(&user.ID, &user.Email, &user.Name, &user.CreatedAt, &user.UpdatedAt); err != nil {
+            return nil, 0, fmt.Errorf("scan user: %w", err)
+        }
+        users = append(users, user)
+    }
+
+    return users, total, nil
+}
+```
+
+---
+
+## Configuration Management
+
+### Environment-Based Config
+
+```go
+type Config struct {
+    Port        string
+    DatabaseURL string
+    JWTSecret   string
+    Environment string
+    CORSOrigins []string
+}
+
+func LoadConfig() (*Config, error) {
+    cfg := &Config{
+        Port:        getEnv("PORT", "8080"),
+        DatabaseURL: getEnv("DATABASE_URL", ""),
+        JWTSecret:   getEnv("JWT_SECRET", ""),
+        Environment: getEnv("ENVIRONMENT", "development"),
+    }
+
+    // Parse CORS origins
+    origins := getEnv("CORS_ORIGINS", "http://localhost:5173")
+    cfg.CORSOrigins = strings.Split(origins, ",")
+
+    // Validate required fields
+    if cfg.DatabaseURL == "" {
+        return nil, errors.New("DATABASE_URL is required")
+    }
+    if cfg.JWTSecret == "" && cfg.Environment == "production" {
+        return nil, errors.New("JWT_SECRET is required in production")
+    }
+
+    return cfg, nil
+}
+
+func getEnv(key, defaultValue string) string {
+    if value := os.Getenv(key); value != "" {
+        return value
+    }
+    return defaultValue
+}
+```
+
+---
+
+## Testing
+
+### Handler Tests
+
+```go
+import (
+    "net/http"
+    "net/http/httptest"
+    "strings"
+    "testing"
+)
+
+func TestGetUserHandler(t *testing.T) {
+    // Setup
+    mockRepo := &MockUserRepository{
+        users: map[string]*User{
+            "123": {ID: "123", Name: "Test User", Email: "test@example.com"},
+        },
+    }
+    handler := NewUserHandler(mockRepo)
+
+    tests := []struct {
+        name       string
+        userID     string
+        wantStatus int
+        wantBody   string
+    }{
+        {
+            name:       "existing user",
+            userID:     "123",
+            wantStatus: http.StatusOK,
+            wantBody:   `"name":"Test User"`,
+        },
+        {
+            name:       "non-existing user",
+            userID:     "999",
+            wantStatus: http.StatusNotFound,
+            wantBody:   `"error":"User not found"`,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            req := httptest.NewRequest("GET", "/api/users/"+tt.userID, nil)
+            req.SetPathValue("id", tt.userID)
+            
+            rec := httptest.NewRecorder()
+            handler.GetUser(rec, req)
+
+            if rec.Code != tt.wantStatus {
+                t.Errorf("got status %d, want %d", rec.Code, tt.wantStatus)
+            }
+            if !strings.Contains(rec.Body.String(), tt.wantBody) {
+                t.Errorf("body %q doesn't contain %q", rec.Body.String(), tt.wantBody)
+            }
+        })
+    }
+}
+```
+
+### Integration Tests
+
+```go
+func TestAPI(t *testing.T) {
+    // Setup test server
+    db := setupTestDB(t)
+    defer db.Close()
+    
+    app := NewApp(db)
+    server := httptest.NewServer(app.Handler())
+    defer server.Close()
+
+    t.Run("create and get user", func(t *testing.T) {
+        // Create user
+        body := `{"email":"test@example.com","name":"Test","password":"password123"}`
+        resp, err := http.Post(server.URL+"/api/users", "application/json", strings.NewReader(body))
+        if err != nil {
+            t.Fatalf("POST failed: %v", err)
+        }
+        defer resp.Body.Close()
+        
+        if resp.StatusCode != http.StatusCreated {
+            t.Errorf("got status %d, want %d", resp.StatusCode, http.StatusCreated)
+        }
+
+        // Parse response
+        var result struct {
+            Data struct {
+                ID string `json:"id"`
+            } `json:"data"`
+        }
+        json.NewDecoder(resp.Body).Decode(&result)
+
+        // Get user
+        resp, err = http.Get(server.URL + "/api/users/" + result.Data.ID)
+        if err != nil {
+            t.Fatalf("GET failed: %v", err)
+        }
+        defer resp.Body.Close()
+        
+        if resp.StatusCode != http.StatusOK {
+            t.Errorf("got status %d, want %d", resp.StatusCode, http.StatusOK)
+        }
+    })
+}
+```
+
+---
+
+## Makefile
+
+```makefile
+.PHONY: build run test lint clean
+
+# Variables
+BINARY_NAME=server
+BUILD_DIR=bin
+MAIN_PATH=./cmd/server
+
+# Build
+build:
+	go build -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
+
+# Run
+run:
+	go run $(MAIN_PATH)
+
+# Run with hot reload (requires air)
+dev:
+	air
+
+# Test
+test:
+	go test -v ./...
+
+test-coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+
+# Lint (requires golangci-lint)
+lint:
+	golangci-lint run
+
+# Format
+fmt:
+	go fmt ./...
+	goimports -w .
+
+# Clean
+clean:
+	rm -rf $(BUILD_DIR)
+	rm -f coverage.out coverage.html
+
+# Database migrations (requires golang-migrate)
+migrate-up:
+	migrate -path migrations -database "$(DATABASE_URL)" up
+
+migrate-down:
+	migrate -path migrations -database "$(DATABASE_URL)" down
+
+# Generate OpenAPI docs (requires swag)
+docs:
+	swag init -g cmd/server/main.go -o api/docs
+```
+
+---
+
+## Frontend Integration Examples
+
+### React Service for Go API
+
+```typescript
+// services/api.ts - Frontend code to call Go backend
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+interface ApiResponse<T> {
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+async function fetchApi<T>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<T> {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+    credentials: 'include', // For cookies/auth
+  });
+
+  const json: ApiResponse<T> = await response.json();
+
+  if (!response.ok) {
+    throw new Error(json.error || 'Request failed');
+  }
+
+  return json.data as T;
+}
+
+// Example usage
+export const userApi = {
+  getAll: () => fetchApi<User[]>('/api/users'),
+  getById: (id: string) => fetchApi<User>(`/api/users/${id}`),
+  create: (data: CreateUserRequest) =>
+    fetchApi<User>('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: UpdateUserRequest) =>
+    fetchApi<User>(`/api/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    fetchApi<void>(`/api/users/${id}`, {
+      method: 'DELETE',
+    }),
+};
+```
+
+### TanStack Query Integration
+
+```typescript
+// hooks/useUsers.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { userApi } from '@services/api';
+
+export const userKeys = {
+  all: ['users'] as const,
+  detail: (id: string) => ['users', id] as const,
+};
+
+export function useUsers() {
+  return useQuery({
+    queryKey: userKeys.all,
+    queryFn: userApi.getAll,
+  });
+}
+
+export function useUser(id: string) {
+  return useQuery({
+    queryKey: userKeys.detail(id),
+    queryFn: () => userApi.getById(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: userApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
+}
+```
+
+---
+
+## Examples
+
+<example>
+```go
+// ✅ Good - Complete handler with validation, error handling, and proper response
+func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+    ctx := r.Context()
+    
+    var req CreateUserRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        writeError(w, http.StatusBadRequest, "Invalid request body")
+        return
+    }
+
+    if err := validate.Struct(req); err != nil {
+        writeError(w, http.StatusBadRequest, formatValidationErrors(err))
+        return
+    }
+
+    user, err := h.service.CreateUser(ctx, req)
+    if err != nil {
+        handleError(w, err)
+        return
+    }
+
+    writeJSON(w, http.StatusCreated, user)
+}
+```
+</example>
+
+<example type="invalid">
+```go
+// ❌ Bad - No validation, ignores errors, no proper response structure
+func createUser(w http.ResponseWriter, r *http.Request) {
+    var user User
+    json.NewDecoder(r.Body).Decode(&user) // Error ignored!
+    db.Create(&user)                       // Error ignored!
+    json.NewEncoder(w).Encode(user)        // No status code, no envelope
+}
+```
+</example>
+
+---
+
+## Critical Reminders
+
+- **Always handle errors** - Check every error, never use `_`
+- **Use context.Context** - Pass as first parameter, respect cancellation
+- **Configure CORS** - Required for React frontend communication
+- **Set server timeouts** - Prevent resource exhaustion
+- **Use structured logging** - Include request IDs for debugging
+- **Validate all inputs** - Never trust client data
+- **Use proper HTTP status codes** - Match REST conventions
+- **Close resources** - Use `defer` for cleanup
+- **Test handlers** - Use httptest package for unit tests
+
+## Dependencies
+
+```bash
+# Essential
+go get github.com/rs/cors                     # CORS middleware
+go get github.com/go-playground/validator/v10 # Validation
+go get github.com/google/uuid                 # UUID generation
+
+# Database
+go get github.com/lib/pq                      # PostgreSQL driver
+go get github.com/jmoiron/sqlx               # SQL extensions
+
+# Optional frameworks
+go get github.com/go-chi/chi/v5              # Router
+go get github.com/gin-gonic/gin              # Full framework
+go get github.com/labstack/echo/v4           # Full framework
+
+# Development
+go install github.com/air-verse/air@latest   # Hot reload
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+```
