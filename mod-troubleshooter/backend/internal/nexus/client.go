@@ -351,3 +351,24 @@ func (c *Client) GetCollectionRevisionMods(ctx context.Context, slug string, rev
 
 	return resp.CollectionRevision, nil
 }
+
+// ValidateAPIKey checks if the API key is valid by making a test query.
+func (c *Client) ValidateAPIKey(ctx context.Context) (bool, error) {
+	// Use a simple query to validate the API key
+	var resp struct {
+		CurrentUser *struct {
+			MemberID int `json:"memberId"`
+		} `json:"currentUser"`
+	}
+
+	query := `query { currentUser { memberId } }`
+
+	if err := c.Query(ctx, query, nil, &resp); err != nil {
+		if errors.Is(err, ErrUnauthorized) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return resp.CurrentUser != nil, nil
+}

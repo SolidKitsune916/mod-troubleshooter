@@ -56,13 +56,13 @@
   - Created useCollections hooks for TanStack Query integration
   - Priority: 7
 
-- [ ] **US-008**: Migrate collection browser to use Go backend
+- [x] **US-008**: Migrate collection browser to use Go backend
   - Update data fetching to use new API
   - Remove direct Nexus API calls from frontend
   - Maintain existing UI/UX
   - Priority: 8
 
-- [ ] **US-009**: Add settings page for API key
+- [x] **US-009**: Add settings page for API key
   - Settings form component
   - Store API key in backend
   - Validate key on save
@@ -264,6 +264,25 @@
   - Exponential backoff with configurable initial/max backoff and max retries
   - Helper methods: GetCollection, GetCollectionRevisions, GetCollectionRevisionMods
   - Comprehensive unit tests in client_test.go (100% pass)
+
+- [x] **US-008**: Migrate collection browser to use Go backend
+  - Created CollectionSearch component with URL/slug parsing
+  - Created CollectionHeader component for collection metadata display
+  - Created ModCard component for individual mod file display
+  - Created ModList component with Required/Optional mod grouping
+  - Created CollectionBrowser container with loading skeletons, error states, and screen reader announcements
+  - Integrated with existing API service layer and TanStack Query hooks
+  - WCAG 2.2 AA compliance: semantic HTML, focus management, aria-live regions
+
+- [x] **US-009**: Add settings page for API key
+  - Created `internal/handlers/settings.go` with SettingsStore for runtime API key management
+  - Implemented `GET /api/settings`, `POST /api/settings`, `POST /api/settings/validate` endpoints
+  - Added `ValidateAPIKey` method to Nexus client for key validation
+  - Refactored collection handler to use dynamic client getter pattern for runtime key updates
+  - Created frontend `SettingsPage` component with WCAG 2.2 AA compliant form
+  - Added navigation between Collections and Settings pages
+  - Features: key validation before save, masked key display, show/hide toggle, clear key option
+  - Fixed API response envelope schema mismatch between frontend and backend
 
 ## Discovered Issues
 

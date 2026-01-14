@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -14,6 +15,24 @@ import (
 	"github.com/mod-troubleshooter/backend/internal/nexus"
 	"github.com/rs/cors"
 )
+
+// clientManager manages the Nexus client lifecycle with thread-safe updates.
+type clientManager struct {
+	mu     sync.RWMutex
+	client *nexus.Client
+}
+
+func (m *clientManager) Get() *nexus.Client {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.client
+}
+
+func (m *clientManager) Set(client *nexus.Client) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.client = client
+}
 
 func main() {
 	cfg, err := config.Load()
@@ -26,6 +45,12 @@ func main() {
 	// Health check endpoint
 	mux.HandleFunc("GET /api/health", healthHandler)
 
+	// Initialize settings store with initial API key
+	settingsStore := handlers.NewSettingsStore(cfg.NexusAPIKey)
+
+	// Client manager for dynamic client updates
+	clientMgr := &clientManager{}
+
 	// Initialize Nexus client if API key is configured
 	if cfg.NexusAPIKey != "" {
 		nexusClient, err := nexus.NewClient(nexus.ClientConfig{
@@ -34,15 +59,41 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to create Nexus client: %v", err)
 		}
-
-		// Collection endpoints
-		collectionHandler := handlers.NewCollectionHandler(nexusClient)
-		mux.HandleFunc("GET /api/collections/{slug}", collectionHandler.GetCollection)
-		mux.HandleFunc("GET /api/collections/{slug}/revisions", collectionHandler.GetCollectionRevisions)
-		mux.HandleFunc("GET /api/collections/{slug}/revisions/{revision}", collectionHandler.GetCollectionRevisionMods)
+		clientMgr.Set(nexusClient)
 	} else {
-		log.Println("Warning: Nexus API key not configured, collection endpoints disabled")
+		log.Println("Warning: Nexus API key not configured, collection endpoints will return errors until configured")
 	}
+
+	// Set up callback to update client when API key changes
+	settingsStore.SetOnKeyChange(func(newKey string) {
+		if newKey == "" {
+			clientMgr.Set(nil)
+			log.Println("Nexus API key cleared")
+			return
+		}
+
+		newClient, err := nexus.NewClient(nexus.ClientConfig{
+			APIKey: newKey,
+		})
+		if err != nil {
+			log.Printf("Failed to create new Nexus client: %v", err)
+			return
+		}
+		clientMgr.Set(newClient)
+		log.Println("Nexus API key updated")
+	})
+
+	// Settings endpoints (always available)
+	settingsHandler := handlers.NewSettingsHandler(settingsStore)
+	mux.HandleFunc("GET /api/settings", settingsHandler.GetSettings)
+	mux.HandleFunc("POST /api/settings", settingsHandler.UpdateSettings)
+	mux.HandleFunc("POST /api/settings/validate", settingsHandler.ValidateAPIKey)
+
+	// Collection endpoints with dynamic client lookup
+	collectionHandler := handlers.NewDynamicCollectionHandler(clientMgr)
+	mux.HandleFunc("GET /api/collections/{slug}", collectionHandler.GetCollection)
+	mux.HandleFunc("GET /api/collections/{slug}/revisions", collectionHandler.GetCollectionRevisions)
+	mux.HandleFunc("GET /api/collections/{slug}/revisions/{revision}", collectionHandler.GetCollectionRevisionMods)
 
 	// Configure CORS for React frontend
 	c := cors.New(cors.Options{

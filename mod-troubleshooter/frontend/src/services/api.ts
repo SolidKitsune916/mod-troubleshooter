@@ -11,12 +11,12 @@ export class ApiError extends Error {
   }
 }
 
-/** API response envelope schema */
+/** API response envelope schema - matches backend Response struct */
 const ResponseEnvelopeSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
   z.object({
-    success: z.boolean(),
     data: dataSchema.optional(),
     error: z.string().optional(),
+    message: z.string().optional(),
   });
 
 /** Base API configuration */
@@ -39,15 +39,23 @@ async function fetchApi<T>(
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Unknown error');
-    throw new ApiError(response.status, `API error: ${errorText}`);
+    // Try to parse error response
+    try {
+      const errorJson = await response.json();
+      const errorEnvelope = z.object({ error: z.string().optional() }).parse(errorJson);
+      throw new ApiError(response.status, errorEnvelope.error ?? 'Unknown error');
+    } catch (e) {
+      if (e instanceof ApiError) throw e;
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new ApiError(response.status, `API error: ${errorText}`);
+    }
   }
 
   const json: unknown = await response.json();
   const envelope = ResponseEnvelopeSchema(schema).parse(json);
 
-  if (!envelope.success || envelope.error) {
-    throw new ApiError(500, envelope.error ?? 'Unknown error');
+  if (envelope.error) {
+    throw new ApiError(500, envelope.error);
   }
 
   if (envelope.data === undefined) {
@@ -57,5 +65,45 @@ async function fetchApi<T>(
   return envelope.data;
 }
 
-/** Export the fetch wrapper for use in service modules */
-export { fetchApi };
+/** Fetch wrapper for message-only responses (success messages) */
+async function fetchApiMessage(
+  endpoint: string,
+  options?: RequestInit,
+): Promise<string> {
+  const url = `${API_BASE_URL}${endpoint}`;
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+  });
+
+  if (!response.ok) {
+    try {
+      const errorJson = await response.json();
+      const errorEnvelope = z.object({ error: z.string().optional() }).parse(errorJson);
+      throw new ApiError(response.status, errorEnvelope.error ?? 'Unknown error');
+    } catch (e) {
+      if (e instanceof ApiError) throw e;
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new ApiError(response.status, `API error: ${errorText}`);
+    }
+  }
+
+  const json: unknown = await response.json();
+  const envelope = z.object({
+    message: z.string().optional(),
+    error: z.string().optional(),
+  }).parse(json);
+
+  if (envelope.error) {
+    throw new ApiError(500, envelope.error);
+  }
+
+  return envelope.message ?? 'Success';
+}
+
+/** Export the fetch wrappers for use in service modules */
+export { fetchApi, fetchApiMessage };
