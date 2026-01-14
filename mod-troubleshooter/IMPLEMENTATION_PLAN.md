@@ -4,27 +4,27 @@
 
 ### Backend Setup
 
-- [ ] **US-001**: Initialize Go module and project structure
+- [x] **US-001**: Initialize Go module and project structure
   - Create `backend/` directory structure
   - Initialize `go.mod` with module name
   - Create `cmd/server/main.go` entry point
   - Add Makefile with build/run/test targets
   - Priority: 1
 
-- [ ] **US-002**: Implement basic HTTP server with health endpoint
+- [x] **US-002**: Implement basic HTTP server with health endpoint
   - Configure server with timeouts
   - Add graceful shutdown
   - Implement `/api/health` endpoint
   - Add CORS middleware for frontend
   - Priority: 2
 
-- [ ] **US-003**: Create configuration management
+- [x] **US-003**: Create configuration management
   - Load from environment variables
   - Support `.env` file
   - Config struct for NEXUS_API_KEY, PORT, DATA_DIR
   - Priority: 3
 
-- [ ] **US-004**: Implement Nexus GraphQL client
+- [x] **US-004**: Implement Nexus GraphQL client
   - Create nexus package in internal/
   - Implement GraphQL query execution
   - Add API key header handling
@@ -231,7 +231,36 @@
 
 ## Completed
 
-<!-- Move completed tasks here -->
+- [x] **US-001**: Initialize Go module and project structure
+  - Created `backend/` directory structure with internal packages (config, handlers, nexus, fomod, archive, conflict, cache, models) and pkg/response
+  - Initialized `go.mod` with module `github.com/mod-troubleshooter/backend`
+  - Created `cmd/server/main.go` entry point
+  - Added Makefile with build/run/dev/test/lint/clean targets
+  - Added `.air.toml` for hot reload development
+
+- [x] **US-002**: Implement basic HTTP server with health endpoint
+  - Server configured with ReadTimeout, WriteTimeout, IdleTimeout
+  - Graceful shutdown on SIGINT/SIGTERM
+  - `/api/health` endpoint returning `{"status":"ok"}`
+  - CORS middleware via rs/cors for localhost:5173 and localhost:3000
+
+- [x] **US-003**: Create configuration management
+  - Created `internal/config/config.go` with Config struct
+  - Supports environment variables: NEXUS_API_KEY, PORT, DATA_DIR, CACHE_TTL_HOURS, ENVIRONMENT, CORS_ORIGINS
+  - Automatic `.env` file loading from current or parent directories
+  - Validation (NEXUS_API_KEY required only in production)
+  - Updated `main.go` to use config package
+  - Added unit tests in `config_test.go`
+  - Updated `.env.example` with all supported variables
+
+- [x] **US-004**: Implement Nexus GraphQL client
+  - Created `internal/nexus/` package with types.go, queries.go, client.go
+  - Implemented GraphQL query execution with proper JSON request/response handling
+  - API key header handling via `apikey` header on all requests
+  - Rate limiting with configurable min request delay, adjusts based on remaining quota
+  - Exponential backoff with configurable initial/max backoff and max retries
+  - Helper methods: GetCollection, GetCollectionRevisions, GetCollectionRevisionMods
+  - Comprehensive unit tests in client_test.go (100% pass)
 
 ## Discovered Issues
 
