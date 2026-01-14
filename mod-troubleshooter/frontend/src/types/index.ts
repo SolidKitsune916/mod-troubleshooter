@@ -46,6 +46,16 @@ export type {
   LoadOrderStats,
   LoadOrderAnalysisResult,
   LoadOrderAnalyzeResponse,
+  // Conflict Detection types
+  FileType,
+  ConflictType,
+  ConflictSeverity,
+  ModFileConflict,
+  Conflict,
+  ConflictStats,
+  ModConflictSummary,
+  ConflictAnalysisResult,
+  ConflictAnalyzeResponse,
 } from './api.ts';
 
 export {
@@ -96,4 +106,14 @@ export {
   LoadOrderStatsSchema,
   LoadOrderAnalysisResultSchema,
   LoadOrderAnalyzeResponseSchema,
+  // Conflict Detection schemas
+  FileTypeSchema,
+  ConflictTypeSchema,
+  ConflictSeveritySchema,
+  ModFileSchema2,
+  ConflictSchema,
+  ConflictStatsSchema,
+  ModConflictSummarySchema,
+  ConflictAnalysisResultSchema,
+  ConflictAnalyzeResponseSchema,
 } from './api.ts';

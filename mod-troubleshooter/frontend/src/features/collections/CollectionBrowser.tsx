@@ -3,13 +3,14 @@ import { useState } from 'react';
 import { useCollection } from '@hooks/useCollections.ts';
 import { ApiError } from '@services/api.ts';
 import { LoadOrderView } from '@features/loadorder/index.ts';
+import { ConflictView } from '@features/conflicts/index.ts';
 
 import { CollectionSearch } from './CollectionSearch.tsx';
 import { CollectionHeader } from './CollectionHeader.tsx';
 import { ModList } from './ModList.tsx';
 
 /** View modes available in the collection browser */
-type ViewMode = 'mods' | 'loadorder';
+type ViewMode = 'mods' | 'loadorder' | 'conflicts';
 
 /** Loading skeleton for collection */
 const CollectionSkeleton: React.FC = () => (
@@ -122,6 +123,22 @@ const ViewModeTabs: React.FC<ViewModeTabsProps> = ({ currentMode, onModeChange }
           Load Order
         </button>
       </li>
+      <li>
+        <button
+          onClick={() => onModeChange('conflicts')}
+          aria-current={currentMode === 'conflicts' ? 'page' : undefined}
+          className={`min-h-11 px-4 py-2 rounded-sm font-medium
+            focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+            transition-colors motion-reduce:transition-none
+            ${
+              currentMode === 'conflicts'
+                ? 'bg-accent text-white'
+                : 'text-text-secondary hover:text-text-primary hover:bg-bg-secondary'
+            }`}
+        >
+          Conflicts
+        </button>
+      </li>
     </ul>
   </nav>
 );
@@ -166,6 +183,9 @@ export const CollectionBrowser: React.FC = () => {
           {viewMode === 'mods' && <ModList modFiles={modFiles} />}
           {viewMode === 'loadorder' && slug && revisionNumber > 0 && (
             <LoadOrderView slug={slug} revision={revisionNumber} />
+          )}
+          {viewMode === 'conflicts' && slug && revisionNumber > 0 && (
+            <ConflictView slug={slug} revision={revisionNumber} />
           )}
         </>
       )}

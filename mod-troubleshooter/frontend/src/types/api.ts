@@ -410,3 +410,112 @@ export type LoadOrderPluginInfo = z.infer<typeof LoadOrderPluginInfoSchema>;
 export type LoadOrderStats = z.infer<typeof LoadOrderStatsSchema>;
 export type LoadOrderAnalysisResult = z.infer<typeof LoadOrderAnalysisResultSchema>;
 export type LoadOrderAnalyzeResponse = z.infer<typeof LoadOrderAnalyzeResponseSchema>;
+
+// ============================================
+// Conflict Detection Types
+// ============================================
+
+/** File type classification */
+export const FileTypeSchema = z.enum([
+  'plugin',
+  'mesh',
+  'texture',
+  'sound',
+  'script',
+  'interface',
+  'seq',
+  'bsa',
+  'other',
+]);
+
+/** Conflict type */
+export const ConflictTypeSchema = z.enum(['overwrite', 'duplicate']);
+
+/** Conflict severity */
+export const ConflictSeveritySchema = z.enum([
+  'critical',
+  'high',
+  'medium',
+  'low',
+  'info',
+]);
+
+/** Mod file within a conflict */
+export const ModFileSchema2 = z.object({
+  modId: z.string(),
+  modName: z.string(),
+  path: z.string(),
+  size: z.number(),
+  hash: z.string().optional(),
+  fileType: FileTypeSchema,
+});
+
+/** Conflict between mods */
+export const ConflictSchema = z.object({
+  path: z.string(),
+  type: ConflictTypeSchema,
+  severity: ConflictSeveritySchema,
+  score: z.number(),
+  fileType: FileTypeSchema,
+  sources: z.array(ModFileSchema2),
+  winner: ModFileSchema2.nullable(),
+  losers: z.array(ModFileSchema2),
+  isIdentical: z.boolean(),
+  matchedRules: z.array(z.string()).optional(),
+  message: z.string(),
+});
+
+/** Conflict statistics */
+export const ConflictStatsSchema = z.object({
+  totalFiles: z.number(),
+  uniqueFiles: z.number(),
+  totalConflicts: z.number(),
+  criticalCount: z.number(),
+  highCount: z.number(),
+  mediumCount: z.number(),
+  lowCount: z.number(),
+  infoCount: z.number(),
+  identicalConflicts: z.number(),
+  ruleMatchCount: z.number(),
+  totalScore: z.number(),
+  maxScore: z.number(),
+  averageScore: z.number(),
+  byFileType: z.record(FileTypeSchema, z.number()),
+  modsAnalyzed: z.number(),
+  modsWithConflicts: z.number(),
+});
+
+/** Per-mod conflict summary */
+export const ModConflictSummarySchema = z.object({
+  modId: z.string(),
+  modName: z.string(),
+  totalConflicts: z.number(),
+  winCount: z.number(),
+  loseCount: z.number(),
+  criticalCount: z.number(),
+  highCount: z.number(),
+});
+
+/** Conflict analysis result */
+export const ConflictAnalysisResultSchema = z.object({
+  conflicts: z.array(ConflictSchema),
+  stats: ConflictStatsSchema,
+  modSummaries: z.array(ModConflictSummarySchema),
+  fileToMods: z.record(z.string(), z.array(z.string())),
+});
+
+/** Conflict analysis response from API */
+export const ConflictAnalyzeResponseSchema = ConflictAnalysisResultSchema.extend({
+  cached: z.boolean(),
+});
+
+/** Conflict type exports */
+export type FileType = z.infer<typeof FileTypeSchema>;
+export type ConflictType = z.infer<typeof ConflictTypeSchema>;
+export type ConflictSeverity = z.infer<typeof ConflictSeveritySchema>;
+export type ModFileConflict = z.infer<typeof ModFileSchema2>;
+export type Conflict = z.infer<typeof ConflictSchema>;
+export type ConflictStats = z.infer<typeof ConflictStatsSchema>;
+export type ModConflictSummary = z.infer<typeof ModConflictSummarySchema>;
+export type ConflictAnalysisResult = z.infer<typeof ConflictAnalysisResultSchema>;
+export type ConflictAnalyzeResponse = z.infer<typeof ConflictAnalyzeResponseSchema>;

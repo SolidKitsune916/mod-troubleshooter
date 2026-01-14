@@ -9,3 +9,7 @@ export {
   analyzeCollectionLoadOrder,
   analyzeLoadOrder,
 } from './loadorderService.ts';
+export {
+  analyzeCollectionConflicts,
+  analyzeConflicts,
+} from './conflictService.ts';
