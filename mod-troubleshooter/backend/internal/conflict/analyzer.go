@@ -9,11 +9,22 @@ import (
 )
 
 // Analyzer detects file conflicts between mods.
-type Analyzer struct{}
+type Analyzer struct {
+	scorer *Scorer
+}
 
-// NewAnalyzer creates a new conflict analyzer.
+// NewAnalyzer creates a new conflict analyzer with default scoring rules.
 func NewAnalyzer() *Analyzer {
-	return &Analyzer{}
+	return &Analyzer{
+		scorer: NewScorer(),
+	}
+}
+
+// NewAnalyzerWithRules creates a new conflict analyzer with custom incompatibility rules.
+func NewAnalyzerWithRules(rules []*IncompatibilityRule) *Analyzer {
+	return &Analyzer{
+		scorer: NewScorerWithRules(rules),
+	}
 }
 
 // Analyze detects conflicts between the given mod manifests.
@@ -76,10 +87,13 @@ func (a *Analyzer) Analyze(ctx context.Context, mods []ModManifest) (*AnalysisRe
 		a.updateModSummaries(modSummaryMap, &conflict)
 	}
 
-	// Sort conflicts by severity (critical first), then by path
+	// Sort conflicts by severity (critical first), then by score (descending), then by path
 	sort.Slice(result.Conflicts, func(i, j int) bool {
 		if result.Conflicts[i].Severity != result.Conflicts[j].Severity {
 			return severityOrder(result.Conflicts[i].Severity) < severityOrder(result.Conflicts[j].Severity)
+		}
+		if result.Conflicts[i].Score != result.Conflicts[j].Score {
+			return result.Conflicts[i].Score > result.Conflicts[j].Score // Higher score first
 		}
 		return result.Conflicts[i].Path < result.Conflicts[j].Path
 	})
@@ -166,7 +180,8 @@ func (a *Analyzer) createConflict(path string, files []fileWithContext) Conflict
 	// Generate message
 	message := a.generateMessage(path, &winner, losers, isIdentical)
 
-	return Conflict{
+	// Create conflict without score first (need full conflict to calculate score)
+	conflict := Conflict{
 		Path:        path,
 		Type:        conflictType,
 		Severity:    severity,
@@ -177,6 +192,13 @@ func (a *Analyzer) createConflict(path string, files []fileWithContext) Conflict
 		IsIdentical: isIdentical,
 		Message:     message,
 	}
+
+	// Calculate score using the scorer
+	score, matchedRules := a.scorer.Score(&conflict)
+	conflict.Score = score
+	conflict.MatchedRules = matchedRules
+
+	return conflict
 }
 
 // checkIdentical checks if all files have the same content hash.
@@ -312,6 +334,17 @@ func (a *Analyzer) calculateStats(result *AnalysisResult, modCount int) Stats {
 			stats.IdenticalConflicts++
 		}
 
+		// Count rule matches
+		if len(conflict.MatchedRules) > 0 {
+			stats.RuleMatchCount++
+		}
+
+		// Track score statistics
+		stats.TotalScore += conflict.Score
+		if conflict.Score > stats.MaxScore {
+			stats.MaxScore = conflict.Score
+		}
+
 		// Count by file type
 		stats.ByFileType[conflict.FileType]++
 
@@ -322,6 +355,11 @@ func (a *Analyzer) calculateStats(result *AnalysisResult, modCount int) Stats {
 	}
 
 	stats.ModsWithConflicts = len(modsWithConflicts)
+
+	// Calculate average score
+	if len(result.Conflicts) > 0 {
+		stats.AverageScore = float64(stats.TotalScore) / float64(len(result.Conflicts))
+	}
 
 	return stats
 }

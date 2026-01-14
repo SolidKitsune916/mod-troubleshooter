@@ -52,6 +52,9 @@ type Conflict struct {
 	Type ConflictType `json:"type"`
 	// Severity indicates how serious the conflict is.
 	Severity Severity `json:"severity"`
+	// Score is a numeric severity score from 0-100 for ranking conflicts.
+	// Higher scores indicate more serious conflicts.
+	Score int `json:"score"`
 	// FileType is the type classification of the conflicting file.
 	FileType manifest.FileType `json:"fileType"`
 	// Sources lists all mods that provide this file.
@@ -63,6 +66,8 @@ type Conflict struct {
 	// IsIdentical indicates if all conflicting files have the same content.
 	// Only populated when content hashes are available.
 	IsIdentical bool `json:"isIdentical"`
+	// MatchedRules contains IDs of any incompatibility rules that matched this conflict.
+	MatchedRules []string `json:"matchedRules,omitempty"`
 	// Message is a human-readable description of the conflict.
 	Message string `json:"message"`
 }
@@ -100,6 +105,14 @@ type Stats struct {
 	InfoCount int `json:"infoCount"`
 	// IdenticalConflicts is the number of conflicts with identical files.
 	IdenticalConflicts int `json:"identicalConflicts"`
+	// RuleMatchCount is the number of conflicts that matched incompatibility rules.
+	RuleMatchCount int `json:"ruleMatchCount"`
+	// TotalScore is the sum of all conflict scores.
+	TotalScore int `json:"totalScore"`
+	// MaxScore is the highest individual conflict score.
+	MaxScore int `json:"maxScore"`
+	// AverageScore is the average conflict score.
+	AverageScore float64 `json:"averageScore"`
 	// ByFileType contains conflict counts grouped by file type.
 	ByFileType map[manifest.FileType]int `json:"byFileType"`
 	// ModsAnalyzed is the number of mods included in the analysis.
