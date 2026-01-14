@@ -156,18 +156,18 @@
 
 ### Frontend
 
-- [ ] **US-023**: Create LoadOrderView container
+- [x] **US-023**: Create LoadOrderView container
   - Layout with list and details panels
   - Stats header (slot usage, warnings)
   - Priority: 23
 
-- [ ] **US-024**: Implement LoadOrderList component
+- [x] **US-024**: Implement LoadOrderList component
   - Display plugins with type badges
   - Show master dependencies inline
   - Highlight warnings
   - Priority: 24
 
-- [ ] **US-025**: Implement warning detection UI
+- [x] **US-025**: Implement warning detection UI
   - Missing master indicators
   - Load order issue indicators
   - Expandable warning details
@@ -301,6 +301,26 @@
   - Case-insensitive master matching
   - Caching of collection analysis results
   - Comprehensive test suite for analyzer
+- [x] **US-023**: Create LoadOrderView container
+  - Layout with list and details panels in responsive grid (2/3 + 1/3)
+  - Stats header with plugin counts (total, ESM, ESP, ESL) and issue metrics
+  - Loading skeleton for async state
+  - Error display with API error handling (404, 401, 403, 402, 500+)
+  - Empty state for collections without plugins
+  - Screen reader announcements for data load
+- [x] **US-024**: Implement LoadOrderList component
+  - PluginRow component with index, type badges, filename, master count
+  - Selection state with visual feedback (border highlight)
+  - Issue indicators per plugin showing count and severity
+  - Scrollable list with max height constraint
+  - Keyboard accessible selection (aria-pressed)
+- [x] **US-025**: Implement warning detection UI
+  - WarningPanel component showing all load order issues
+  - Issue cards with severity badges (error/warning) and type labels
+  - Click-to-select plugin from issue panel
+  - Success state when no issues found
+  - LoadOrderDetails panel showing plugin-specific issues
+  - Issue type labels: Missing Master, Wrong Order, Duplicate Plugin
 
 ## Discovered Issues
 
