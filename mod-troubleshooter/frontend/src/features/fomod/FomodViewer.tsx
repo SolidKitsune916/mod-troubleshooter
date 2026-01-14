@@ -4,6 +4,7 @@ import { useFomodAnalysis } from '@hooks/useFomod.ts';
 import { ApiError } from '@services/api.ts';
 
 import type {
+  Dependency,
   FomodData,
   InstallStep,
   OptionGroup,
@@ -11,6 +12,91 @@ import type {
   GroupType,
   PluginType,
 } from '@/types/index.ts';
+
+// ============================================
+// Condition Flag Types and Helpers
+// ============================================
+
+/** Map of flag names to their current values */
+type FlagState = Map<string, string>;
+
+/**
+ * Evaluates a dependency condition against current flag state.
+ * Returns true if the condition is satisfied or undefined.
+ */
+function evaluateDependency(dep: Dependency | undefined, flags: FlagState): boolean {
+  // No dependency means always visible
+  if (!dep) {
+    return true;
+  }
+
+  // Handle flag dependency
+  if (dep.flagDependency) {
+    const currentValue = flags.get(dep.flagDependency.flag);
+    return currentValue === dep.flagDependency.value;
+  }
+
+  // Handle file dependency - for now, assume files are not present
+  // This would need integration with actual file state tracking
+  if (dep.fileDependency) {
+    // Default behavior: Missing files are considered not present
+    // Active/Inactive would need actual mod manager integration
+    if (dep.fileDependency.state === 'Missing') {
+      return true; // Files are assumed missing by default
+    }
+    return false;
+  }
+
+  // Handle game/fomm dependencies - assume satisfied for visualization
+  if (dep.gameDependency || dep.fommDependency) {
+    return true;
+  }
+
+  // Handle composite dependencies with children
+  if (dep.children && dep.children.length > 0) {
+    const operator = dep.operator ?? 'And';
+
+    if (operator === 'And') {
+      return dep.children.every(child => evaluateDependency(child, flags));
+    } else {
+      return dep.children.some(child => evaluateDependency(child, flags));
+    }
+  }
+
+  // No specific condition, default to visible
+  return true;
+}
+
+/**
+ * Collects all condition flags set by selected plugins across all steps.
+ */
+function collectFlags(
+  steps: InstallStep[],
+  selections: Map<string, Set<string>>,
+): FlagState {
+  const flags: FlagState = new Map();
+
+  for (const step of steps) {
+    if (!step.optionGroups) continue;
+
+    for (const group of step.optionGroups) {
+      const groupKey = `${step.name}-${group.name}`;
+      const selectedPlugins = selections.get(groupKey);
+
+      if (!selectedPlugins || !group.plugins) continue;
+
+      for (const plugin of group.plugins) {
+        if (selectedPlugins.has(plugin.name) && plugin.conditionFlags) {
+          for (const flag of plugin.conditionFlags) {
+            flags.set(flag.name, flag.value);
+          }
+        }
+      }
+    }
+  }
+
+  return flags;
+}
 
 // ============================================
 // Props Interfaces
@@ -31,6 +117,7 @@ interface FomodStepNavigatorProps {
   steps: InstallStep[];
   currentStepIndex: number;
   onStepChange: (index: number) => void;
+  stepVisibility: boolean[];
 }
 
 interface FomodStepViewProps {
@@ -264,6 +351,7 @@ const FomodStepNavigator: React.FC<FomodStepNavigatorProps> = ({
   steps,
   currentStepIndex,
   onStepChange,
+  stepVisibility,
 }) => (
   <nav
     aria-label="Installation steps"
@@ -273,25 +361,32 @@ const FomodStepNavigator: React.FC<FomodStepNavigatorProps> = ({
       {steps.map((step, index) => {
         const isActive = index === currentStepIndex;
         const isPast = index < currentStepIndex;
+        const isVisible = stepVisibility[index];
 
         return (
           <li key={step.name}>
             <button
               onClick={() => onStepChange(index)}
               aria-current={isActive ? 'step' : undefined}
+              aria-hidden={!isVisible}
               className={`min-h-11 px-4 py-2 rounded-sm font-medium transition-colors
                 motion-reduce:transition-none
                 focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
                 ${
-                  isActive
-                    ? 'bg-accent text-white'
-                    : isPast
-                      ? 'bg-accent/20 text-accent hover:bg-accent/30'
-                      : 'bg-bg-secondary text-text-secondary hover:bg-bg-secondary/80'
+                  !isVisible
+                    ? 'bg-bg-secondary/50 text-text-muted opacity-50'
+                    : isActive
+                      ? 'bg-accent text-white'
+                      : isPast
+                        ? 'bg-accent/20 text-accent hover:bg-accent/30'
+                        : 'bg-bg-secondary text-text-secondary hover:bg-bg-secondary/80'
                 }`}
             >
               <span className="mr-2 text-sm opacity-60">{index + 1}.</span>
               {step.name}
+              {!isVisible && (
+                <span className="ml-2 text-xs">(hidden)</span>
+              )}
             </button>
           </li>
         );
@@ -523,6 +618,24 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
 
   const steps = useMemo(() => data?.data?.config.installSteps ?? [], [data]);
 
+  // Calculate condition flags from current selections
+  const flags = useMemo(
+    () => collectFlags(steps, selections),
+    [steps, selections],
+  );
+
+  // Calculate visibility for each step based on its dependency conditions
+  const stepVisibility = useMemo(
+    () => steps.map(step => evaluateDependency(step.visible, flags)),
+    [steps, flags],
+  );
+
+  // Count visible steps for screen reader announcement
+  const visibleStepCount = useMemo(
+    () => stepVisibility.filter(Boolean).length,
+    [stepVisibility],
+  );
+
   const handleSelectionChange = useCallback(
     (groupKey: string, pluginName: string, selected: boolean, groupType: GroupType) => {
       setSelections((prev) => {
@@ -555,6 +668,34 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
     setCurrentStepIndex(index);
   }, []);
 
+  // Auto-navigate to next visible step if current step becomes hidden
+  const currentStepVisible = stepVisibility[currentStepIndex];
+  const adjustedStepIndex = useMemo(() => {
+    if (currentStepVisible) {
+      return currentStepIndex;
+    }
+    // Find next visible step
+    const nextVisible = stepVisibility.findIndex(
+      (visible, i) => visible && i > currentStepIndex,
+    );
+    if (nextVisible !== -1) {
+      return nextVisible;
+    }
+    // Find previous visible step
+    for (let i = currentStepIndex - 1; i >= 0; i--) {
+      if (stepVisibility[i]) {
+        return i;
+      }
+    }
+    // Fall back to first step
+    return 0;
+  }, [currentStepIndex, currentStepVisible, stepVisibility]);
+
+  // Update step index if it was adjusted
+  if (adjustedStepIndex !== currentStepIndex && steps.length > 0) {
+    setCurrentStepIndex(adjustedStepIndex);
+  }
+
   // Loading state
   if (isLoading) {
     return <FomodSkeleton />;
@@ -575,7 +716,7 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
   return (
     <div className="space-y-6">
       <div aria-live="polite" className="sr-only">
-        Loaded FOMOD installer with {steps.length} steps
+        Loaded FOMOD installer with {steps.length} steps ({visibleStepCount} visible based on current selections)
       </div>
 
       <FomodHeader data={data.data} cached={data.cached} />
@@ -586,14 +727,23 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
             steps={steps}
             currentStepIndex={currentStepIndex}
             onStepChange={handleStepChange}
+            stepVisibility={stepVisibility}
           />
 
-          {currentStep && (
+          {currentStep && stepVisibility[currentStepIndex] && (
             <FomodStepView
               step={currentStep}
               selections={selections}
               onSelectionChange={handleSelectionChange}
             />
+          )}
+
+          {currentStep && !stepVisibility[currentStepIndex] && (
+            <div className="p-6 rounded-sm bg-bg-card border border-border text-center">
+              <p className="text-text-muted">
+                This step is hidden based on your current selections.
+              </p>
+            </div>
           )}
 
           <FomodSummary steps={steps} selections={selections} />

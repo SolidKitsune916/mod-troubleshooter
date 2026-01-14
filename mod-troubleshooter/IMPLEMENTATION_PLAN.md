@@ -84,20 +84,20 @@
   - Track download progress
   - Priority: 11
 
-- [ ] **US-012**: Implement archive extractor
+- [x] **US-012**: Implement archive extractor
   - Support .zip, .7z, .rar formats
   - Extract specific paths (fomod/ directory)
   - Use github.com/mholt/archiver
   - Priority: 12
 
-- [ ] **US-013**: Implement FOMOD XML parser
+- [x] **US-013**: Implement FOMOD XML parser
   - Parse info.xml for metadata
   - Parse ModuleConfig.xml for install steps
   - Handle all FOMOD elements (steps, groups, plugins, conditions)
   - Return structured JSON
   - Priority: 13
 
-- [ ] **US-014**: Create FOMOD analysis endpoint
+- [x] **US-014**: Create FOMOD analysis endpoint
   - `POST /api/fomod/analyze`
   - Orchestrate download → extract → parse
   - Cache results in SQLite
@@ -105,25 +105,25 @@
 
 ### Frontend - FOMOD Visualization
 
-- [ ] **US-015**: Create FomodViewer container component
+- [x] **US-015**: Create FomodViewer container component
   - Layout with header, steps, summary panels
   - State management for selections
   - API integration
   - Priority: 15
 
-- [ ] **US-016**: Implement FomodStepView component
+- [x] **US-016**: Implement FomodStepView component
   - Render option groups
   - Handle different group types (SelectOne, SelectAny, etc.)
   - Option cards with image, description, type badge
   - Priority: 16
 
-- [ ] **US-017**: Implement selection logic
+- [x] **US-017**: Implement selection logic
   - Track selections per step
   - Enforce group type constraints
   - Set/evaluate condition flags
   - Priority: 17
 
-- [ ] **US-018**: Implement conditional step visibility
+- [x] **US-018**: Implement conditional step visibility
   - Evaluate dependency conditions
   - Show/hide steps based on flags
   - Update when selections change
@@ -302,6 +302,27 @@
   - File size limit enforcement via Content-Length header and streaming limit
   - Comprehensive unit tests covering success, errors, context cancellation, progress tracking
   - All tests passing, go vet clean
+
+- [x] **US-015, US-016, US-017**: Create FomodViewer container and step components
+  - Added FOMOD Zod schemas and TypeScript types to frontend/src/types/api.ts
+  - Created fomodService.ts with `analyzeFomod` API function
+  - Created useFomod.ts hook with TanStack Query integration (24hr cache)
+  - Implemented FomodViewer container with FomodHeader, FomodStepNavigator, FomodStepView, FomodSummary
+  - Support all FOMOD group types (SelectExactlyOne, SelectAtMostOne, SelectAtLeastOne, SelectAny, SelectAll)
+  - Support all plugin types with visual badges (Required, Recommended, Optional, NotUsable, CouldBeUsable)
+  - Selection logic handles radio vs checkbox behavior based on group type
+  - Loading skeleton and error handling with retry capability
+  - Full accessibility: ARIA labels, keyboard navigation, screen reader support
+  - Typecheck and lint passing
+
+- [x] **US-018**: Implement conditional step visibility
+  - Added `evaluateDependency` function to evaluate recursive dependency conditions against flag state
+  - Added `collectFlags` function to collect condition flags from selected plugins
+  - Step navigator now shows visibility status with visual indication for hidden steps
+  - Auto-navigation to next/previous visible step when current step becomes hidden
+  - Screen reader announcements include visible step count
+  - Handles flag dependencies, file dependencies (defaults), and composite And/Or conditions
+  - Typecheck and lint passing
 
 ## Discovered Issues
 
