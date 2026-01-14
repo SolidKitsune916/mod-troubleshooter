@@ -78,7 +78,7 @@
   - Return download URLs array
   - Priority: 10
 
-- [ ] **US-011**: Implement archive downloader
+- [x] **US-011**: Implement archive downloader
   - Download to temp directory
   - Support large files (streaming)
   - Track download progress
@@ -292,6 +292,16 @@
   - Created `internal/handlers/download.go` with `DownloadHandler` and `GetModFileDownloadLinks` handler
   - Registered `GET /api/games/{game}/mods/{modId}/files/{fileId}/download` endpoint
   - Returns 403 with clear message for non-Premium accounts
+
+- [x] **US-011**: Implement archive downloader
+  - Created `internal/archive/downloader.go` with `Downloader` type
+  - Streaming download support using `io.Copy` for memory efficiency with large files
+  - `ProgressCallback` function type for tracking download progress (downloaded bytes, total size)
+  - Temp directory management with `Cleanup()` and `CleanupPath()` methods
+  - `DownloaderConfig` for configurable temp dir, HTTP client, max file size, user agent
+  - File size limit enforcement via Content-Length header and streaming limit
+  - Comprehensive unit tests covering success, errors, context cancellation, progress tracking
+  - All tests passing, go vet clean
 
 ## Discovered Issues
 
