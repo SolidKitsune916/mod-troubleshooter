@@ -159,7 +159,7 @@
 
 ### Frontend
 
-- [ ] **US-023**: Create LoadOrderView container
+- [x] **US-023**: Create LoadOrderView container
   - Layout with list and details panels
   - Stats header (slot usage, warnings)
   - Priority: 23
@@ -322,6 +322,20 @@
   - Auto-navigation to next/previous visible step when current step becomes hidden
   - Screen reader announcements include visible step count
   - Handles flag dependencies, file dependencies (defaults), and composite And/Or conditions
+  - Typecheck and lint passing
+
+- [x] **US-023**: Create LoadOrderView container
+  - Added LoadOrder Zod schemas and TypeScript types (PluginInfo, Issue, Stats, AnalysisResult)
+  - Created loadorderService.ts with analyzeCollectionLoadOrder API function
+  - Created useLoadOrder.ts hook with TanStack Query (24hr cache)
+  - Implemented LoadOrderView container with LoadOrderHeader, LoadOrderList, LoadOrderDetails, WarningPanel
+  - Stats header displays total plugins, ESM/ESP/ESL counts, error and warning counts
+  - Plugin list with index, type badges, master count, and issue indicators
+  - Details panel shows plugin info, flags, masters, and issues when plugin selected
+  - Warning panel shows all issues with click-to-select functionality
+  - View mode tabs in CollectionBrowser to switch between Mod Files and Load Order views
+  - Loading skeleton, error handling, and empty state
+  - Full accessibility: ARIA labels, keyboard navigation, screen reader announcements
   - Typecheck and lint passing
 
 ## Discovered Issues
