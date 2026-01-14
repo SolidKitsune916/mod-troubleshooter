@@ -164,13 +164,13 @@
   - Stats header (slot usage, warnings)
   - Priority: 23
 
-- [ ] **US-024**: Implement LoadOrderList component
+- [x] **US-024**: Implement LoadOrderList component
   - Display plugins with type badges
   - Show master dependencies inline
   - Highlight warnings
   - Priority: 24
 
-- [ ] **US-025**: Implement warning detection UI
+- [x] **US-025**: Implement warning detection UI
   - Missing master indicators
   - Load order issue indicators
   - Expandable warning details
@@ -337,6 +337,23 @@
   - Loading skeleton, error handling, and empty state
   - Full accessibility: ARIA labels, keyboard navigation, screen reader announcements
   - Typecheck and lint passing
+
+- [x] **US-024**: Implement LoadOrderList component
+  - LoadOrderList component displays plugins with index numbers, type badges, master count
+  - PluginRow component with selectable rows and issue indicators
+  - Highlights warnings with colored badge showing issue count
+  - Maximum 600px scrollable list for long plugin lists
+  - Keyboard accessible with focus-visible outlines
+  - Implemented as part of US-023 within LoadOrderView.tsx
+
+- [x] **US-025**: Implement warning detection UI
+  - WarningPanel component shows all load order issues
+  - Issues displayed with severity badges (error/warning)
+  - Click-to-select functionality navigates to associated plugin
+  - Issue type labels (Missing Master, Wrong Order, Duplicate Plugin)
+  - Error/warning counts in panel header
+  - "No Issues Found" success state when load order is healthy
+  - Implemented as part of US-023 within LoadOrderView.tsx
 
 ## Discovered Issues
 
