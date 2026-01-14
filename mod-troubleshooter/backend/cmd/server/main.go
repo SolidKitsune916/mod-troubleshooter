@@ -148,6 +148,15 @@ func main() {
 	mux.HandleFunc("POST /api/loadorder/analyze", loadOrderHandler.AnalyzeLoadOrder)
 	mux.HandleFunc("GET /api/collections/{slug}/revisions/{revision}/loadorder", loadOrderHandler.AnalyzeCollectionLoadOrder)
 
+	// Conflict analysis endpoints (requires Premium for downloading mod archives)
+	conflictHandler := handlers.NewConflictHandler(handlers.ConflictHandlerConfig{
+		ClientGetter: clientMgr,
+		Downloader:   downloader,
+		Cache:        fomodCache,
+	})
+	mux.HandleFunc("POST /api/conflicts/analyze", conflictHandler.AnalyzeConflicts)
+	mux.HandleFunc("GET /api/collections/{slug}/revisions/{revision}/conflicts", conflictHandler.AnalyzeCollectionConflicts)
+
 	// Configure CORS for React frontend
 	c := cors.New(cors.Options{
 		AllowedOrigins:   cfg.CORSOrigins,

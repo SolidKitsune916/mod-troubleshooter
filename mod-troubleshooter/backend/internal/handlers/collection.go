@@ -198,9 +198,11 @@ func (h *CollectionHandler) GetCollectionRevisionMods(w http.ResponseWriter, r *
 func handleNexusError(w http.ResponseWriter, err error, action string) {
 	switch {
 	case errors.Is(err, nexus.ErrNotFound):
-		WriteError(w, http.StatusNotFound, "Collection not found")
+		WriteError(w, http.StatusNotFound, "Resource not found")
 	case errors.Is(err, nexus.ErrUnauthorized):
 		WriteError(w, http.StatusUnauthorized, "Invalid or missing Nexus API key")
+	case errors.Is(err, nexus.ErrPremiumOnly):
+		WriteError(w, http.StatusForbidden, "This feature requires a Nexus Mods Premium account")
 	case errors.Is(err, nexus.ErrRateLimited):
 		WriteError(w, http.StatusTooManyRequests, "Nexus API rate limit exceeded, please try again later")
 	case errors.Is(err, nexus.ErrNoAPIKey):
