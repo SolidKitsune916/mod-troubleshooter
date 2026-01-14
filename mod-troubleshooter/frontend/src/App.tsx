@@ -1,7 +1,9 @@
+import { CollectionBrowser } from '@features/collections/index.ts';
+
 /** Main application component */
 function App() {
   return (
-    <main className="min-h-screen p-8">
+    <main className="min-h-screen p-8 max-w-6xl mx-auto">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-text-primary">
           Mod Troubleshooter
@@ -11,18 +13,7 @@ function App() {
         </p>
       </header>
 
-      <section
-        aria-labelledby="getting-started"
-        className="rounded-sm border border-border bg-bg-card p-6"
-      >
-        <h2 id="getting-started" className="mb-4 text-xl font-semibold">
-          Getting Started
-        </h2>
-        <p className="text-text-secondary">
-          Enter a Nexus Mods collection URL or slug to begin analyzing your mod
-          setup.
-        </p>
-      </section>
+      <CollectionBrowser />
     </main>
   );
 }
