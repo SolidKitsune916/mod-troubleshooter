@@ -5,3 +5,7 @@ export {
   fetchCollectionRevisionMods,
 } from './collectionService.ts';
 export { analyzeFomod } from './fomodService.ts';
+export {
+  analyzeCollectionLoadOrder,
+  analyzeLoadOrder,
+} from './loadorderService.ts';

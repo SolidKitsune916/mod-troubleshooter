@@ -325,3 +325,88 @@ export type ConditionalInstallItem = z.infer<typeof ConditionalInstallItemSchema
 export type ModuleConfig = z.infer<typeof ModuleConfigSchema>;
 export type FomodData = z.infer<typeof FomodDataSchema>;
 export type FomodAnalyzeResponse = z.infer<typeof FomodAnalyzeResponseSchema>;
+
+// ============================================
+// Load Order Types
+// ============================================
+
+/** Plugin type - ESM, ESP, or ESL */
+export const LoadOrderPluginTypeSchema = z.enum(['ESM', 'ESP', 'ESL']);
+
+/** Plugin flags from header */
+export const PluginFlagsSchema = z.object({
+  isMaster: z.boolean(),
+  isLight: z.boolean(),
+  isLocalized: z.boolean(),
+});
+
+/** Load order issue type */
+export const IssueTypeSchema = z.enum([
+  'missing_master',
+  'wrong_order',
+  'duplicate_plugin',
+]);
+
+/** Load order issue severity */
+export const IssueSeveritySchema = z.enum(['error', 'warning']);
+
+/** Load order issue */
+export const LoadOrderIssueSchema = z.object({
+  type: IssueTypeSchema,
+  severity: IssueSeveritySchema,
+  plugin: z.string(),
+  relatedPlugin: z.string().optional(),
+  message: z.string(),
+  index: z.number(),
+});
+
+/** Plugin info in load order */
+export const LoadOrderPluginInfoSchema = z.object({
+  filename: z.string(),
+  type: LoadOrderPluginTypeSchema,
+  flags: PluginFlagsSchema,
+  author: z.string().optional(),
+  description: z.string().optional(),
+  masters: z.array(z.string()),
+  index: z.number(),
+  hasIssues: z.boolean(),
+  issueCount: z.number(),
+});
+
+/** Load order statistics */
+export const LoadOrderStatsSchema = z.object({
+  totalPlugins: z.number(),
+  esmCount: z.number(),
+  espCount: z.number(),
+  eslCount: z.number(),
+  totalIssues: z.number(),
+  errorCount: z.number(),
+  warningCount: z.number(),
+  pluginsWithIssues: z.number(),
+  missingMasters: z.number(),
+  wrongOrderCount: z.number(),
+});
+
+/** Load order analysis result */
+export const LoadOrderAnalysisResultSchema = z.object({
+  plugins: z.array(LoadOrderPluginInfoSchema),
+  issues: z.array(LoadOrderIssueSchema),
+  stats: LoadOrderStatsSchema,
+  dependencyGraph: z.record(z.string(), z.array(z.string())),
+});
+
+/** Load order analysis response from API */
+export const LoadOrderAnalyzeResponseSchema = LoadOrderAnalysisResultSchema.extend({
+  cached: z.boolean(),
+});
+
+/** Load order type exports */
+export type LoadOrderPluginType = z.infer<typeof LoadOrderPluginTypeSchema>;
+export type PluginFlags = z.infer<typeof PluginFlagsSchema>;
+export type IssueType = z.infer<typeof IssueTypeSchema>;
+export type IssueSeverity = z.infer<typeof IssueSeveritySchema>;
+export type LoadOrderIssue = z.infer<typeof LoadOrderIssueSchema>;
+export type LoadOrderPluginInfo = z.infer<typeof LoadOrderPluginInfoSchema>;
+export type LoadOrderStats = z.infer<typeof LoadOrderStatsSchema>;
+export type LoadOrderAnalysisResult = z.infer<typeof LoadOrderAnalysisResultSchema>;
+export type LoadOrderAnalyzeResponse = z.infer<typeof LoadOrderAnalyzeResponseSchema>;

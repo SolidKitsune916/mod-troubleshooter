@@ -36,6 +36,16 @@ export type {
   ModuleConfig,
   FomodData,
   FomodAnalyzeResponse,
+  // Load Order types
+  LoadOrderPluginType,
+  PluginFlags,
+  IssueType,
+  IssueSeverity,
+  LoadOrderIssue,
+  LoadOrderPluginInfo,
+  LoadOrderStats,
+  LoadOrderAnalysisResult,
+  LoadOrderAnalyzeResponse,
 } from './api.ts';
 
 export {
@@ -76,4 +86,14 @@ export {
   ModuleConfigSchema,
   FomodDataSchema,
   FomodAnalyzeResponseSchema,
+  // Load Order schemas
+  LoadOrderPluginTypeSchema,
+  PluginFlagsSchema,
+  IssueTypeSchema,
+  IssueSeveritySchema,
+  LoadOrderIssueSchema,
+  LoadOrderPluginInfoSchema,
+  LoadOrderStatsSchema,
+  LoadOrderAnalysisResultSchema,
+  LoadOrderAnalyzeResponseSchema,
 } from './api.ts';

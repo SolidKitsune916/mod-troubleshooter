@@ -5,3 +5,4 @@ export {
   useCollectionRevisionMods,
 } from './useCollections.ts';
 export { fomodKeys, useFomodAnalysis } from './useFomod.ts';
+export { loadOrderKeys, useLoadOrderAnalysis } from './useLoadOrder.ts';
