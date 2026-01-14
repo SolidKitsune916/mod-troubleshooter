@@ -5,8 +5,10 @@ import { ApiError } from '@services/api.ts';
 
 import type {
   Dependency,
+  FileList,
   FomodData,
   InstallStep,
+  ModuleConfig,
   OptionGroup,
   Plugin,
   GroupType,
@@ -549,6 +551,459 @@ const FomodStepView: React.FC<FomodStepViewProps> = ({
 };
 
 // ============================================
+// File Preview Types and Helpers
+// ============================================
+
+/** Represents a file to be installed with source and destination */
+interface InstallFile {
+  source: string;
+  destination: string;
+  priority: number;
+  isFolder: boolean;
+  category: 'required' | 'selected' | 'conditional';
+}
+
+/** Tree node for displaying file hierarchy */
+interface FileTreeNode {
+  name: string;
+  path: string;
+  isFolder: boolean;
+  children: Map<string, FileTreeNode>;
+  files: InstallFile[];
+}
+
+/**
+ * Extracts files from a FileList structure.
+ */
+function extractFilesFromFileList(
+  fileList: FileList | undefined,
+  category: InstallFile['category'],
+): InstallFile[] {
+  const result: InstallFile[] = [];
+
+  if (fileList?.files) {
+    for (const file of fileList.files) {
+      result.push({
+        source: file.source,
+        destination: file.destination ?? file.source,
+        priority: file.priority ?? 0,
+        isFolder: false,
+        category,
+      });
+    }
+  }
+
+  if (fileList?.folders) {
+    for (const folder of fileList.folders) {
+      result.push({
+        source: folder.source,
+        destination: folder.destination ?? folder.source,
+        priority: folder.priority ?? 0,
+        isFolder: true,
+        category,
+      });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Collects all files to be installed based on current selections.
+ */
+function collectInstallFiles(
+  config: ModuleConfig,
+  steps: InstallStep[],
+  selections: Map<string, Set<string>>,
+  flags: FlagState,
+): InstallFile[] {
+  const files: InstallFile[] = [];
+
+  // 1. Required install files (always installed)
+  files.push(...extractFilesFromFileList(config.requiredInstallFiles, 'required'));
+
+  // 2. Files from selected plugins
+  for (const step of steps) {
+    if (!step.optionGroups) continue;
+
+    for (const group of step.optionGroups) {
+      const groupKey = `${step.name}-${group.name}`;
+      const selectedPlugins = selections.get(groupKey);
+
+      if (!selectedPlugins || !group.plugins) continue;
+
+      for (const plugin of group.plugins) {
+        if (selectedPlugins.has(plugin.name) && plugin.files) {
+          files.push(...extractFilesFromFileList(plugin.files, 'selected'));
+        }
+      }
+    }
+  }
+
+  // 3. Conditional file installs (based on flag conditions)
+  if (config.conditionalFileInstalls) {
+    for (const item of config.conditionalFileInstalls) {
+      if (evaluateDependency(item.dependencies, flags)) {
+        files.push(...extractFilesFromFileList(item.files, 'conditional'));
+      }
+    }
+  }
+
+  return files;
+}
+
+/**
+ * Builds a tree structure from flat file paths.
+ */
+function buildFileTree(files: InstallFile[]): FileTreeNode {
+  const root: FileTreeNode = {
+    name: 'Data',
+    path: '',
+    isFolder: true,
+    children: new Map(),
+    files: [],
+  };
+
+  for (const file of files) {
+    const destPath = file.destination.replace(/\\/g, '/');
+    const parts = destPath.split('/').filter(Boolean);
+
+    let current = root;
+
+    // Navigate/create path to the parent folder
+    for (let i = 0; i < parts.length - 1; i++) {
+      const part = parts[i];
+      if (!current.children.has(part)) {
+        current.children.set(part, {
+          name: part,
+          path: parts.slice(0, i + 1).join('/'),
+          isFolder: true,
+          children: new Map(),
+          files: [],
+        });
+      }
+      current = current.children.get(part)!;
+    }
+
+    // Add the file or folder to the current node
+    if (file.isFolder) {
+      // For folders, create or update the folder node
+      const folderName = parts[parts.length - 1] ?? file.source;
+      if (!current.children.has(folderName)) {
+        current.children.set(folderName, {
+          name: folderName,
+          path: parts.join('/'),
+          isFolder: true,
+          children: new Map(),
+          files: [],
+        });
+      }
+      // Mark it as a folder source
+      const folderNode = current.children.get(folderName)!;
+      folderNode.files.push(file);
+    } else {
+      // For files, add to parent's files array
+      const fileName = parts[parts.length - 1] ?? file.source;
+      current.files.push({ ...file, destination: fileName });
+    }
+  }
+
+  return root;
+}
+
+/**
+ * Counts total files in the tree.
+ */
+function countFiles(node: FileTreeNode): number {
+  let count = node.files.length;
+  for (const child of node.children.values()) {
+    count += countFiles(child);
+  }
+  return count;
+}
+
+// ============================================
+// File Preview Panel Props
+// ============================================
+
+interface FilePreviewPanelProps {
+  config: ModuleConfig;
+  steps: InstallStep[];
+  selections: Map<string, Set<string>>;
+  flags: FlagState;
+}
+
+interface FileTreeNodeViewProps {
+  node: FileTreeNode;
+  depth: number;
+}
+
+// ============================================
+// File Tree Node View Component
+// ============================================
+
+const FileTreeNodeView: React.FC<FileTreeNodeViewProps> = ({ node, depth }) => {
+  const [isExpanded, setIsExpanded] = useState(depth < 2);
+  const hasChildren = node.children.size > 0 || node.files.length > 0;
+
+  const toggleExpanded = useCallback(() => {
+    setIsExpanded((prev) => !prev);
+  }, []);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleExpanded();
+      }
+    },
+    [toggleExpanded],
+  );
+
+  // Get category badge color
+  const getCategoryBadge = (category: InstallFile['category']) => {
+    switch (category) {
+      case 'required':
+        return 'bg-error/20 text-error';
+      case 'selected':
+        return 'bg-accent/20 text-accent';
+      case 'conditional':
+        return 'bg-warning/20 text-warning';
+    }
+  };
+
+  const sortedChildren = useMemo(() => {
+    return Array.from(node.children.values()).sort((a, b) => {
+      // Folders first, then alphabetical
+      if (a.isFolder && !b.isFolder) return -1;
+      if (!a.isFolder && b.isFolder) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [node.children]);
+
+  const sortedFiles = useMemo(() => {
+    return [...node.files].sort((a, b) => a.destination.localeCompare(b.destination));
+  }, [node.files]);
+
+  return (
+    <li className="select-none">
+      {/* Folder node with expand/collapse */}
+      {node.isFolder && node.name && (
+        <div
+          role="treeitem"
+          aria-expanded={isExpanded}
+          aria-selected={false}
+          tabIndex={0}
+          onClick={toggleExpanded}
+          onKeyDown={handleKeyDown}
+          className={`
+            flex items-center gap-2 py-1 px-2 rounded-xs cursor-pointer
+            hover:bg-bg-secondary/50
+            focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-1
+            transition-colors motion-reduce:transition-none
+          `}
+          style={{ paddingLeft: `${depth * 16 + 8}px` }}
+        >
+          {hasChildren && (
+            <span
+              aria-hidden="true"
+              className={`text-text-muted text-xs transition-transform motion-reduce:transition-none ${
+                isExpanded ? 'rotate-90' : ''
+              }`}
+            >
+              ▶
+            </span>
+          )}
+          {!hasChildren && <span className="w-3" aria-hidden="true" />}
+          <span aria-hidden="true" className="text-accent">
+            📁
+          </span>
+          <span className="text-text-primary font-medium">{node.name}</span>
+        </div>
+      )}
+
+      {/* Children and files */}
+      {isExpanded && hasChildren && (
+        <ul role="group" className="list-none">
+          {/* Child folders */}
+          {sortedChildren.map((child) => (
+            <FileTreeNodeView key={child.path} node={child} depth={depth + 1} />
+          ))}
+
+          {/* Files in this folder */}
+          {sortedFiles.map((file, index) => (
+            <li
+              key={`${file.destination}-${index}`}
+              role="treeitem"
+              aria-selected={false}
+              className="flex items-center gap-2 py-1 px-2"
+              style={{ paddingLeft: `${(depth + 1) * 16 + 8}px` }}
+            >
+              <span className="w-3" aria-hidden="true" />
+              <span aria-hidden="true" className="text-text-muted">
+                📄
+              </span>
+              <span className="text-text-secondary text-sm truncate flex-1">
+                {file.destination}
+              </span>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${getCategoryBadge(file.category)}`}
+              >
+                {file.category === 'required'
+                  ? 'Req'
+                  : file.category === 'selected'
+                    ? 'Sel'
+                    : 'Cond'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+};
+
+// ============================================
+// File Preview Panel Component
+// ============================================
+
+const FilePreviewPanel: React.FC<FilePreviewPanelProps> = ({
+  config,
+  steps,
+  selections,
+  flags,
+}) => {
+  const installFiles = useMemo(
+    () => collectInstallFiles(config, steps, selections, flags),
+    [config, steps, selections, flags],
+  );
+
+  const fileTree = useMemo(() => buildFileTree(installFiles), [installFiles]);
+  const totalFiles = useMemo(() => countFiles(fileTree), [fileTree]);
+
+  const requiredCount = installFiles.filter((f) => f.category === 'required').length;
+  const selectedCount = installFiles.filter((f) => f.category === 'selected').length;
+  const conditionalCount = installFiles.filter((f) => f.category === 'conditional').length;
+
+  if (installFiles.length === 0) {
+    return (
+      <aside
+        aria-label="File preview"
+        className="p-4 rounded-sm bg-bg-card border border-border"
+      >
+        <h3 className="text-lg font-semibold text-text-primary mb-2">Files to Install</h3>
+        <p className="text-text-muted">No files will be installed with current selections.</p>
+      </aside>
+    );
+  }
+
+  return (
+    <aside
+      aria-label="File preview"
+      className="p-4 rounded-sm bg-bg-card border border-border"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-text-primary">Files to Install</h3>
+        <div className="flex items-center gap-3 text-sm">
+          <span className="text-text-muted">{totalFiles} files</span>
+          {requiredCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-error/20 text-error text-xs">
+              {requiredCount} required
+            </span>
+          )}
+          {selectedCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-accent/20 text-accent text-xs">
+              {selectedCount} selected
+            </span>
+          )}
+          {conditionalCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-warning/20 text-warning text-xs">
+              {conditionalCount} conditional
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div
+        aria-live="polite"
+        className="sr-only"
+      >
+        {totalFiles} files will be installed: {requiredCount} required, {selectedCount} from
+        selections, {conditionalCount} conditional
+      </div>
+
+      <div className="max-h-80 overflow-y-auto rounded-xs border border-border bg-bg-secondary/30">
+        <ul
+          role="tree"
+          aria-label="File installation tree"
+          className="py-2 list-none"
+        >
+          {/* Show root children directly */}
+          {Array.from(fileTree.children.values())
+            .sort((a, b) => {
+              if (a.isFolder && !b.isFolder) return -1;
+              if (!a.isFolder && b.isFolder) return 1;
+              return a.name.localeCompare(b.name);
+            })
+            .map((child) => (
+              <FileTreeNodeView key={child.path} node={child} depth={0} />
+            ))}
+
+          {/* Show root-level files */}
+          {fileTree.files.map((file, index) => (
+            <li
+              key={`root-${file.destination}-${index}`}
+              role="treeitem"
+              aria-selected={false}
+              className="flex items-center gap-2 py-1 px-2"
+              style={{ paddingLeft: '8px' }}
+            >
+              <span className="w-3" aria-hidden="true" />
+              <span aria-hidden="true" className="text-text-muted">
+                📄
+              </span>
+              <span className="text-text-secondary text-sm truncate flex-1">
+                {file.destination}
+              </span>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                  file.category === 'required'
+                    ? 'bg-error/20 text-error'
+                    : file.category === 'selected'
+                      ? 'bg-accent/20 text-accent'
+                      : 'bg-warning/20 text-warning'
+                }`}
+              >
+                {file.category === 'required'
+                  ? 'Req'
+                  : file.category === 'selected'
+                    ? 'Sel'
+                    : 'Cond'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-3 flex gap-4 text-xs text-text-muted">
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-error/50" aria-hidden="true" />
+          Required: Always installed
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-accent/50" aria-hidden="true" />
+          Selected: From your choices
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-warning/50" aria-hidden="true" />
+          Conditional: Based on flags
+        </span>
+      </div>
+    </aside>
+  );
+};
+
+// ============================================
 // Summary Component
 // ============================================
 
@@ -747,6 +1202,13 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
           )}
 
           <FomodSummary steps={steps} selections={selections} />
+
+          <FilePreviewPanel
+            config={data.data.config}
+            steps={steps}
+            selections={selections}
+            flags={flags}
+          />
         </>
       )}
 
@@ -756,9 +1218,19 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
             This FOMOD does not have any installation steps to configure.
           </p>
           {data.data.config.requiredInstallFiles && (
-            <p className="text-text-muted mt-2 text-sm">
-              Required files will be installed automatically.
-            </p>
+            <>
+              <p className="text-text-muted mt-2 text-sm">
+                Required files will be installed automatically.
+              </p>
+              <div className="mt-4">
+                <FilePreviewPanel
+                  config={data.data.config}
+                  steps={[]}
+                  selections={new Map()}
+                  flags={new Map()}
+                />
+              </div>
+            </>
           )}
         </div>
       )}

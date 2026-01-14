@@ -102,31 +102,31 @@
 
 ### Frontend - FOMOD Visualization
 
-- [ ] **US-015**: Create FomodViewer container component
+- [x] **US-015**: Create FomodViewer container component
   - Layout with header, steps, summary panels
   - State management for selections
   - API integration
   - Priority: 15
 
-- [ ] **US-016**: Implement FomodStepView component
+- [x] **US-016**: Implement FomodStepView component
   - Render option groups
   - Handle different group types (SelectOne, SelectAny, etc.)
   - Option cards with image, description, type badge
   - Priority: 16
 
-- [ ] **US-017**: Implement selection logic
+- [x] **US-017**: Implement selection logic
   - Track selections per step
   - Enforce group type constraints
   - Set/evaluate condition flags
   - Priority: 17
 
-- [ ] **US-018**: Implement conditional step visibility
+- [x] **US-018**: Implement conditional step visibility
   - Evaluate dependency conditions
   - Show/hide steps based on flags
   - Update when selections change
   - Priority: 18
 
-- [ ] **US-019**: Implement file preview panel
+- [x] **US-019**: Implement file preview panel
   - Show files that will be installed
   - Update based on current selections
   - Tree view of destination paths
@@ -243,6 +243,15 @@
 - [x] **US-010**: Implement Nexus download link fetching
 - [x] **US-011**: Implement archive downloader
 - [x] **US-012**: Implement archive extractor
+- [x] **US-015**: Create FomodViewer container component
+- [x] **US-016**: Implement FomodStepView component
+- [x] **US-017**: Implement selection logic
+- [x] **US-018**: Implement conditional step visibility
+- [x] **US-019**: Implement file preview panel
+  - Tree view of files to be installed
+  - Shows required, selected, and conditional files
+  - Collapsible folder hierarchy
+  - File counts by category
   - Support for .zip, .7z, .rar via mholt/archiver/v4
   - Path-specific extraction (fomod/ directory)
   - File size limits and zip slip protection
