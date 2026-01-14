@@ -1,7 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useId } from 'react';
 
 import { useFomodAnalysis } from '@hooks/useFomod.ts';
 import { ApiError } from '@services/api.ts';
+import { FomodTreeView } from './FomodTreeView.tsx';
 
 import type {
   Dependency,
@@ -14,6 +15,12 @@ import type {
   GroupType,
   PluginType,
 } from '@/types/index.ts';
+
+// ============================================
+// View Mode Types
+// ============================================
+
+type ViewMode = 'wizard' | 'tree';
 
 // ============================================
 // Condition Flag Types and Helpers
@@ -1061,6 +1068,69 @@ const FomodSummary: React.FC<FomodSummaryProps> = ({ steps, selections }) => {
 };
 
 // ============================================
+// View Mode Toggle Component
+// ============================================
+
+interface ViewModeToggleProps {
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
+}
+
+const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ viewMode, onViewModeChange }) => {
+  const groupId = useId();
+
+  return (
+    <div
+      role="group"
+      aria-labelledby={groupId}
+      className="flex items-center gap-2 p-1 rounded-sm bg-bg-secondary"
+    >
+      <span id={groupId} className="sr-only">
+        View mode
+      </span>
+      <button
+        onClick={() => onViewModeChange('wizard')}
+        aria-pressed={viewMode === 'wizard'}
+        className={`
+          min-h-9 px-4 py-1.5 rounded-xs font-medium text-sm
+          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+          transition-colors motion-reduce:transition-none
+          ${
+            viewMode === 'wizard'
+              ? 'bg-accent text-white'
+              : 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-secondary/80'
+          }
+        `}
+      >
+        <span aria-hidden="true" className="mr-2">
+          📋
+        </span>
+        Wizard
+      </button>
+      <button
+        onClick={() => onViewModeChange('tree')}
+        aria-pressed={viewMode === 'tree'}
+        className={`
+          min-h-9 px-4 py-1.5 rounded-xs font-medium text-sm
+          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+          transition-colors motion-reduce:transition-none
+          ${
+            viewMode === 'tree'
+              ? 'bg-accent text-white'
+              : 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-secondary/80'
+          }
+        `}
+      >
+        <span aria-hidden="true" className="mr-2">
+          🌳
+        </span>
+        Tree View
+      </button>
+    </div>
+  );
+};
+
+// ============================================
 // Main FomodViewer Component
 // ============================================
 
@@ -1068,8 +1138,13 @@ const FomodSummary: React.FC<FomodSummaryProps> = ({ steps, selections }) => {
 export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [selections, setSelections] = useState<Map<string, Set<string>>>(new Map());
+  const [viewMode, setViewMode] = useState<ViewMode>('wizard');
 
   const { data, isLoading, error, refetch } = useFomodAnalysis(game, modId, fileId);
+
+  const handleViewModeChange = useCallback((mode: ViewMode) => {
+    setViewMode(mode);
+  }, []);
 
   const steps = useMemo(() => data?.data?.config.installSteps ?? [], [data]);
 
@@ -1176,63 +1251,81 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
 
       <FomodHeader data={data.data} cached={data.cached} />
 
-      {steps.length > 0 && (
+      {/* View mode toggle */}
+      <div className="flex items-center justify-between">
+        <p className="text-text-muted text-sm">
+          {viewMode === 'wizard'
+            ? 'Interactive wizard view - make selections step by step'
+            : 'Tree view - browse the full FOMOD structure'}
+        </p>
+        <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+      </div>
+
+      {/* Tree View Mode */}
+      {viewMode === 'tree' && <FomodTreeView data={data.data} />}
+
+      {/* Wizard View Mode */}
+      {viewMode === 'wizard' && (
         <>
-          <FomodStepNavigator
-            steps={steps}
-            currentStepIndex={currentStepIndex}
-            onStepChange={handleStepChange}
-            stepVisibility={stepVisibility}
-          />
-
-          {currentStep && stepVisibility[currentStepIndex] && (
-            <FomodStepView
-              step={currentStep}
-              selections={selections}
-              onSelectionChange={handleSelectionChange}
-            />
-          )}
-
-          {currentStep && !stepVisibility[currentStepIndex] && (
-            <div className="p-6 rounded-sm bg-bg-card border border-border text-center">
-              <p className="text-text-muted">
-                This step is hidden based on your current selections.
-              </p>
-            </div>
-          )}
-
-          <FomodSummary steps={steps} selections={selections} />
-
-          <FilePreviewPanel
-            config={data.data.config}
-            steps={steps}
-            selections={selections}
-            flags={flags}
-          />
-        </>
-      )}
-
-      {steps.length === 0 && (
-        <div className="p-6 rounded-sm bg-bg-card border border-border text-center">
-          <p className="text-text-secondary">
-            This FOMOD does not have any installation steps to configure.
-          </p>
-          {data.data.config.requiredInstallFiles && (
+          {steps.length > 0 && (
             <>
-              <p className="text-text-muted mt-2 text-sm">
-                Required files will be installed automatically.
-              </p>
-              <div className="mt-4">
-                <FilePreviewPanel
-                  config={data.data.config}
-                  steps={[]}
-                  selections={new Map()}
-                  flags={new Map()}
+              <FomodStepNavigator
+                steps={steps}
+                currentStepIndex={currentStepIndex}
+                onStepChange={handleStepChange}
+                stepVisibility={stepVisibility}
+              />
+
+              {currentStep && stepVisibility[currentStepIndex] && (
+                <FomodStepView
+                  step={currentStep}
+                  selections={selections}
+                  onSelectionChange={handleSelectionChange}
                 />
-              </div>
+              )}
+
+              {currentStep && !stepVisibility[currentStepIndex] && (
+                <div className="p-6 rounded-sm bg-bg-card border border-border text-center">
+                  <p className="text-text-muted">
+                    This step is hidden based on your current selections.
+                  </p>
+                </div>
+              )}
+
+              <FomodSummary steps={steps} selections={selections} />
+
+              <FilePreviewPanel
+                config={data.data.config}
+                steps={steps}
+                selections={selections}
+                flags={flags}
+              />
             </>
           )}
-        </div>
+
+          {steps.length === 0 && (
+            <div className="p-6 rounded-sm bg-bg-card border border-border text-center">
+              <p className="text-text-secondary">
+                This FOMOD does not have any installation steps to configure.
+              </p>
+              {data.data.config.requiredInstallFiles && (
+                <>
+                  <p className="text-text-muted mt-2 text-sm">
+                    Required files will be installed automatically.
+                  </p>
+                  <div className="mt-4">
+                    <FilePreviewPanel
+                      config={data.data.config}
+                      steps={[]}
+                      selections={new Map()}
+                      flags={new Map()}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
