@@ -41,17 +41,19 @@
 
 ### Frontend Migration
 
-- [ ] **US-006**: Set up new frontend project structure
-  - Copy relevant code from viewer-app
-  - Set up Vite + React + TypeScript
-  - Configure TanStack Query
-  - Set up path aliases
+- [x] **US-006**: Set up new frontend project structure
+  - Set up Vite + React 19 + TypeScript with strict mode
+  - Configure TanStack Query with QueryClientProvider
+  - Set up Tailwind CSS v4 with gaming dark theme
+  - Configure path aliases (@/, @components/, @features/, @hooks/, @services/, @utils/)
+  - Created directory structure: components, features (collections, fomod, loadorder, conflicts), hooks, services, types, utils
   - Priority: 6
 
-- [ ] **US-007**: Create API service layer
-  - Axios or fetch wrapper
-  - Type-safe API client
-  - Error handling
+- [x] **US-007**: Create API service layer
+  - Implemented fetch wrapper with type safety using Zod schemas
+  - Created ApiError class for typed error handling
+  - Created collectionService with fetchCollection, fetchCollectionRevisions, fetchCollectionRevisionMods
+  - Created useCollections hooks for TanStack Query integration
   - Priority: 7
 
 - [ ] **US-008**: Migrate collection browser to use Go backend
