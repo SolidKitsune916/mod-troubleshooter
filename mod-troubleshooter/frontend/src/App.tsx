@@ -1,11 +1,18 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 import { CollectionBrowser } from '@features/collections/index.ts';
 import { SettingsPage } from '@features/settings/index.ts';
 import { Header } from '@components/Header/index.ts';
 import { Sidebar } from '@components/Sidebar/index.ts';
 import { SkipLinks } from '@components/SkipLinks/index.ts';
-import { useViewerCollections, useSearch, useMobileMenu } from '@hooks/index.ts';
+import { KeyboardShortcutsHelp } from '@components/KeyboardShortcutsHelp/index.ts';
+import {
+  useViewerCollections,
+  useSearch,
+  useMobileMenu,
+  useKeyboardShortcuts,
+  createDefaultShortcuts,
+} from '@hooks/index.ts';
 
 import styles from './App.module.css';
 
@@ -35,6 +42,22 @@ function App() {
     showAllCollections,
     showSingleCollection,
   } = useViewerCollections();
+
+  // Keyboard shortcuts
+  const shortcuts = useMemo(() => createDefaultShortcuts({
+    onGoToCollections: () => setCurrentPage('collections'),
+    onGoToSettings: () => setCurrentPage('settings'),
+    onFocusSearch: () => {
+      // Focus the search input if it exists
+      const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
+      searchInput?.focus();
+    },
+  }), []);
+
+  const { showHelp, closeHelp, pendingKey, shortcuts: registeredShortcuts } = useKeyboardShortcuts({
+    enabled: true,
+    shortcuts,
+  });
 
   const handleCategoryClick = useCallback((categoryName: string) => {
     const categoryId = `category-${categoryName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
@@ -94,6 +117,14 @@ function App() {
   return (
     <div className={styles.app}>
       <SkipLinks />
+
+      {/* Keyboard shortcuts help overlay */}
+      <KeyboardShortcutsHelp
+        isOpen={showHelp}
+        onClose={closeHelp}
+        shortcuts={registeredShortcuts}
+        pendingKey={pendingKey}
+      />
 
       <Header
         currentGame={currentGame}

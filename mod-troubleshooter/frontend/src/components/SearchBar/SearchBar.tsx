@@ -61,6 +61,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
             }
           }}
           autoComplete="off"
+          data-search-input
         />
         {value && (
           <button

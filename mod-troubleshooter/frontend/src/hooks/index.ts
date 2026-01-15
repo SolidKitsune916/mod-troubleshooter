@@ -12,3 +12,8 @@ export { quotaKeys, useQuota, getQuotaPercentage, getQuotaStatus } from './useQu
 export { useSearch } from './useSearch.ts';
 export { useMobileMenu } from './useMobileMenu.ts';
 export { gamesKeys, useGames, getGameById, getDefaultGameId } from './useGames.ts';
+export {
+  useKeyboardShortcuts,
+  createDefaultShortcuts,
+  type ShortcutDefinition,
+} from './useKeyboardShortcuts.ts';

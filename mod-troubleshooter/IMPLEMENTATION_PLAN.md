@@ -452,9 +452,13 @@
 
 ### UI/UX Improvements
 
-- [ ] **US-055**: Keyboard shortcuts
-  - Navigation shortcuts
-  - Action shortcuts with help overlay
+- [x] **US-055**: Keyboard shortcuts
+  - `useKeyboardShortcuts` hook for global keyboard shortcuts
+  - Support for key sequences (e.g., `g c` for go to collections)
+  - `KeyboardShortcutsHelp` overlay component (press `?` to show)
+  - Navigation: `g c` (collections), `g s` (settings)
+  - Actions: `/` (focus search), `Escape` (close/clear)
+  - Pending key indicator for multi-key sequences
   - Priority: 55
 
 - [ ] **US-056**: Loading skeletons everywhere
