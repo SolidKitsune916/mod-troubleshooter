@@ -1068,6 +1068,273 @@ const FomodSummary: React.FC<FomodSummaryProps> = ({ steps, selections }) => {
 };
 
 // ============================================
+// Search Types and Functions
+// ============================================
+
+/** Search result for a plugin option */
+interface PluginSearchResult {
+  stepIndex: number;
+  stepName: string;
+  groupName: string;
+  plugin: Plugin;
+  pluginType: PluginType;
+  matchField: 'name' | 'description';
+}
+
+/**
+ * Search all plugins across all steps for matching name or description.
+ */
+function searchPlugins(
+  steps: InstallStep[],
+  query: string,
+  typeFilter: PluginType | null,
+): PluginSearchResult[] {
+  const results: PluginSearchResult[] = [];
+  const lowerQuery = query.toLowerCase().trim();
+
+  if (!lowerQuery && !typeFilter) {
+    return results;
+  }
+
+  for (let stepIndex = 0; stepIndex < steps.length; stepIndex++) {
+    const step = steps[stepIndex];
+    if (!step.optionGroups) continue;
+
+    for (const group of step.optionGroups) {
+      if (!group.plugins) continue;
+
+      for (const plugin of group.plugins) {
+        const pluginType = getPluginType(plugin);
+
+        // Check type filter
+        if (typeFilter && pluginType !== typeFilter) {
+          continue;
+        }
+
+        // Check query match
+        let matchField: 'name' | 'description' | null = null;
+        if (lowerQuery) {
+          if (plugin.name.toLowerCase().includes(lowerQuery)) {
+            matchField = 'name';
+          } else if (plugin.description?.toLowerCase().includes(lowerQuery)) {
+            matchField = 'description';
+          }
+          if (!matchField) continue;
+        } else {
+          matchField = 'name'; // Default when only filtering by type
+        }
+
+        results.push({
+          stepIndex,
+          stepName: step.name,
+          groupName: group.name,
+          plugin,
+          pluginType,
+          matchField,
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
+// ============================================
+// Search Panel Component
+// ============================================
+
+interface FomodSearchPanelProps {
+  steps: InstallStep[];
+  onNavigateToStep: (stepIndex: number) => void;
+  currentStepIndex: number;
+}
+
+const FomodSearchPanel: React.FC<FomodSearchPanelProps> = ({
+  steps,
+  onNavigateToStep,
+  currentStepIndex,
+}) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<PluginType | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const searchResults = useMemo(
+    () => searchPlugins(steps, searchQuery, typeFilter),
+    [steps, searchQuery, typeFilter],
+  );
+
+  const hasActiveSearch = searchQuery.trim() !== '' || typeFilter !== null;
+
+  const handleResultClick = (result: PluginSearchResult) => {
+    onNavigateToStep(result.stepIndex);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setTypeFilter(null);
+  };
+
+  const pluginTypes: PluginType[] = ['Required', 'Recommended', 'Optional', 'CouldBeUsable', 'NotUsable'];
+
+  return (
+    <div className="rounded-sm bg-bg-card border border-border overflow-hidden">
+      {/* Search header - collapsible toggle */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full p-4 flex items-center justify-between
+          text-left hover:bg-bg-secondary/50
+          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+          transition-colors motion-reduce:transition-none"
+        aria-expanded={isExpanded}
+      >
+        <div className="flex items-center gap-2">
+          <span aria-hidden="true">🔍</span>
+          <span className="font-medium text-text-primary">Search Options</span>
+          {hasActiveSearch && (
+            <span className="px-2 py-0.5 rounded-full text-xs bg-accent/20 text-accent">
+              {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+        <span
+          aria-hidden="true"
+          className={`text-text-muted transition-transform motion-reduce:transition-none ${
+            isExpanded ? 'rotate-180' : ''
+          }`}
+        >
+          ▼
+        </span>
+      </button>
+
+      {/* Search content - expandable */}
+      {isExpanded && (
+        <div className="p-4 pt-0 space-y-4 border-t border-border">
+          {/* Search inputs */}
+          <div className="flex gap-3 flex-wrap">
+            <div className="flex-1 min-w-[200px]">
+              <label
+                htmlFor="fomod-search"
+                className="block text-sm text-text-muted mb-1"
+              >
+                Search by name or description
+              </label>
+              <input
+                id="fomod-search"
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="e.g., texture, 4K, patch"
+                className="w-full min-h-11 px-4 py-2 rounded-sm
+                  bg-bg-secondary border border-border
+                  text-text-primary placeholder:text-text-muted
+                  focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+                  transition-colors motion-reduce:transition-none"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="fomod-type-filter"
+                className="block text-sm text-text-muted mb-1"
+              >
+                Option type
+              </label>
+              <select
+                id="fomod-type-filter"
+                value={typeFilter ?? ''}
+                onChange={(e) =>
+                  setTypeFilter(e.target.value ? (e.target.value as PluginType) : null)
+                }
+                className="min-h-11 px-4 py-2 rounded-sm
+                  bg-bg-secondary border border-border
+                  text-text-primary
+                  focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+                  transition-colors motion-reduce:transition-none"
+              >
+                <option value="">All Types</option>
+                {pluginTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {hasActiveSearch && (
+              <div className="flex items-end">
+                <button
+                  onClick={handleClearSearch}
+                  className="min-h-11 px-4 py-2 rounded-sm
+                    bg-bg-secondary border border-border
+                    text-text-secondary
+                    hover:bg-bg-hover hover:text-text-primary
+                    focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+                    transition-colors motion-reduce:transition-none"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Search results */}
+          {hasActiveSearch && (
+            <div>
+              {searchResults.length === 0 ? (
+                <p className="text-text-muted text-sm py-2">
+                  No options found matching your search criteria.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <p className="text-text-muted text-sm">
+                    {searchResults.length} option{searchResults.length !== 1 ? 's' : ''} found
+                  </p>
+                  <ul className="space-y-1" role="list">
+                    {searchResults.map((result, index) => (
+                      <li key={`${result.stepName}-${result.groupName}-${result.plugin.name}-${index}`}>
+                        <button
+                          onClick={() => handleResultClick(result)}
+                          className={`w-full text-left p-3 rounded-sm
+                            flex flex-col gap-1
+                            transition-colors motion-reduce:transition-none
+                            focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+                            ${
+                              result.stepIndex === currentStepIndex
+                                ? 'bg-accent/10 border border-accent'
+                                : 'bg-bg-secondary hover:bg-bg-hover'
+                            }`}
+                        >
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-text-primary">
+                              {result.plugin.name}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-medium ${getPluginTypeBadgeClass(result.pluginType)}`}
+                            >
+                              {result.pluginType}
+                            </span>
+                          </div>
+                          <span className="text-xs text-text-muted">
+                            {result.stepName} → {result.groupName}
+                          </span>
+                          {result.matchField === 'description' && result.plugin.description && (
+                            <span className="text-xs text-text-secondary line-clamp-1">
+                              {result.plugin.description}
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================================
 // View Mode Toggle Component
 // ============================================
 
@@ -1463,6 +1730,13 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
                 currentStepIndex={currentStepIndex}
                 onStepChange={handleStepChange}
                 stepVisibility={stepVisibility}
+              />
+
+              {/* Search panel */}
+              <FomodSearchPanel
+                steps={steps}
+                onNavigateToStep={handleStepChange}
+                currentStepIndex={currentStepIndex}
               />
 
               {currentStep && stepVisibility[currentStepIndex] && (

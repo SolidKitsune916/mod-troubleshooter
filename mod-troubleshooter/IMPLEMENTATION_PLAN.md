@@ -390,9 +390,11 @@
   - Highlight conditional relationships
   - Priority: 39
 
-- [ ] **US-040**: Add FOMOD search functionality
-  - Search options across all steps
-  - Filter by option type
+- [x] **US-040**: Add FOMOD search functionality
+  - Search options by name/description across all steps
+  - Filter by option type (Required, Recommended, Optional, etc.)
+  - Collapsible search panel with result count badge
+  - Click results to navigate to corresponding step
   - Priority: 40
 
 ### Load Order Enhancements
