@@ -10,7 +10,7 @@ const (
 
 // Collection represents a Nexus Mods collection.
 type Collection struct {
-	ID             string           `json:"id"`
+	ID             int              `json:"id"`
 	Slug           string           `json:"slug"`
 	Name           string           `json:"name"`
 	Summary        string           `json:"summary"`

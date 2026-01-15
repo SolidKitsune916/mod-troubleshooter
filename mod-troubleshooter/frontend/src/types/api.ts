@@ -85,7 +85,7 @@ export const RevisionDetailsSchema = z.object({
 
 /** Collection schema */
 export const CollectionSchema = z.object({
-  id: z.string(),
+  id: z.number(),
   slug: z.string(),
   name: z.string(),
   summary: z.string(),

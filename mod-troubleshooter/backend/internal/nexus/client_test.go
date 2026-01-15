@@ -195,7 +195,7 @@ func TestClient_GetCollection(t *testing.T) {
 		resp := GraphQLResponse{
 			Data: map[string]interface{}{
 				"collection": map[string]interface{}{
-					"id":             "abc123",
+					"id":             123,
 					"slug":           slug,
 					"name":           "Test Collection",
 					"summary":        "A test collection",
@@ -234,8 +234,8 @@ func TestClient_GetCollection(t *testing.T) {
 		t.Fatalf("GetCollection failed: %v", err)
 	}
 
-	if collection.ID != "abc123" {
-		t.Errorf("got ID %q, want %q", collection.ID, "abc123")
+	if collection.ID != 123 {
+		t.Errorf("got ID %d, want %d", collection.ID, 123)
 	}
 	if collection.Name != "Test Collection" {
 		t.Errorf("got Name %q, want %q", collection.Name, "Test Collection")
