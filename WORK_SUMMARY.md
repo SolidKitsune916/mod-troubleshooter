@@ -2,11 +2,31 @@
 
 ## Session Overview
 - **Date**: 2026-01-15
-- **Iterations Completed**: 7 user stories
+- **Iterations Completed**: 9 user stories
 - **Mode**: Implementation mode
-- **Tags Created**: v0.0.3, v0.0.4, v0.0.5, v0.0.6, v0.0.7, v0.0.8, v0.0.9
+- **Tags Created**: v0.0.3, v0.0.4, v0.0.5, v0.0.6, v0.0.7, v0.0.8, v0.0.9, v0.0.10, v0.0.11
 
 ## What Was Implemented
+
+### US-044: Load order comparison mode (v0.0.11)
+- **Frontend**: Added `LoadOrderComparisonView` component for side-by-side load order snapshots
+- **Feature**: Save current load order as Snapshot A or B
+- **Diff Categories**: A Only, B Only, Moved (with position delta), Same
+- **Filtering**: Filter buttons to focus on specific diff types
+- **Position Delta**: Shows direction (↑/↓) and distance of plugin moves
+- **Testing**: Added 13 unit tests for comparison logic
+- **Integration**: Third view mode in LoadOrderView (List, Graph, Compare)
+- **Accessibility**: Full WCAG 2.2 AA compliance with keyboard navigation
+
+### US-039: FOMOD dependency graph visualization (v0.0.10)
+- **Frontend**: Added `FomodDependencyGraph` component using React Flow
+- **Visualization**: Interactive graph showing steps, groups, plugins, flags, conditional installs
+- **Nodes**: Color-coded by type (step=blue, group=purple, plugin=green, flag=yellow, conditional=cyan)
+- **Edges**: Show flag-setting relationships and visibility dependencies with animated edges
+- **Navigation**: Click step nodes to switch to wizard view at that step
+- **Controls**: MiniMap, zoom controls, fit-to-view button, node/edge counts
+- **Legend**: Shows all node types and edge meanings
+- **Integration**: Fourth view mode in FomodViewer (Wizard, Tree, Graph, Compare)
 
 ### US-037: FOMOD comparison mode (v0.0.9)
 - **Frontend**: Added `FomodComparisonView` component for side-by-side configuration comparison
@@ -66,6 +86,7 @@
 3. **Slot limit thresholds**: Chose 90% warning and 98% critical to give users adequate notice before hitting the hard 254 limit
 4. **FOMOD comparison**: Designed with snapshot approach - save configurations independently of current selections to enable A/B comparison
 5. **Testing framework**: Added Vitest with @testing-library/react for component and utility testing
+6. **Graph visualization**: Used existing React Flow infrastructure from LoadOrderView for consistency
 
 ## Issues Resolved
 
@@ -79,11 +100,10 @@
 ## Remaining Work (Next Priority)
 
 From IMPLEMENTATION_PLAN.md Phase 5:
-1. **US-039**: FOMOD dependency graph visualization
-2. **US-044**: Load order comparison mode
-3. **US-049**: Conflict graph visualization
-4. **US-055**: Keyboard shortcuts
-5. **US-056**: Loading skeletons everywhere
+1. **US-049**: Conflict graph visualization
+2. **US-055**: Keyboard shortcuts
+3. **US-056**: Loading skeletons everywhere
+4. **US-060**: Full keyboard navigation audit
 
 ## Learnings
 
@@ -93,20 +113,26 @@ From IMPLEMENTATION_PLAN.md Phase 5:
 4. **Accessibility**: Components consistently use ARIA labels, role attributes, and proper focus management
 5. **Reduced motion**: CSS animations respect `prefers-reduced-motion` media query
 6. **React Compiler**: React Compiler ESLint rules are active, requiring careful attention to memoization dependency arrays
+7. **React Flow**: Already in use for LoadOrderView, reused patterns for FomodDependencyGraph
 
 ## File Changes Summary
 
 ```
 Modified:
-- mod-troubleshooter/frontend/src/features/fomod/FomodViewer.tsx (comparison mode integration)
+- mod-troubleshooter/frontend/src/features/fomod/FomodViewer.tsx (comparison + graph modes)
 - mod-troubleshooter/frontend/src/features/fomod/index.ts (exports)
+- mod-troubleshooter/frontend/src/features/loadorder/LoadOrderView.tsx (comparison mode)
+- mod-troubleshooter/frontend/src/features/loadorder/index.ts (exports)
 - mod-troubleshooter/frontend/vite.config.ts (Vitest config)
 - mod-troubleshooter/frontend/package.json (test dependencies)
 - mod-troubleshooter/IMPLEMENTATION_PLAN.md (status updates)
 
 Created:
 - mod-troubleshooter/frontend/src/features/fomod/FomodComparisonView.tsx
+- mod-troubleshooter/frontend/src/features/fomod/FomodDependencyGraph.tsx
 - mod-troubleshooter/frontend/src/features/fomod/fomodUtils.ts
 - mod-troubleshooter/frontend/src/features/fomod/fomodUtils.test.ts
+- mod-troubleshooter/frontend/src/features/loadorder/LoadOrderComparisonView.tsx
+- mod-troubleshooter/frontend/src/features/loadorder/loadorderUtils.test.ts
 - mod-troubleshooter/frontend/src/test/setup.ts
 ```
