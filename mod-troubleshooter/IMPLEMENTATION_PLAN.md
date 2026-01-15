@@ -445,9 +445,10 @@
 
 ### Accessibility
 
-- [ ] **US-059**: Reduced motion support
-  - Respect prefers-reduced-motion
-  - Disable animations when preferred
+- [x] **US-059**: Reduced motion support (Already Complete)
+  - Global CSS `@media (prefers-reduced-motion: reduce)` disables all animations
+  - Tailwind `motion-reduce:transition-none` used consistently in components
+  - Animation duration set to 0.01ms when reduced motion preferred
   - Priority: 59
 
 - [ ] **US-060**: Full keyboard navigation audit

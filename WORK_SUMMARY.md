@@ -58,6 +58,7 @@
 ## Issues Resolved
 
 - **US-035 was already complete**: Discovered that rate limiting and quota display had been implemented in a previous session (verified by commit 4a7a5de)
+- **US-059 was already complete**: Discovered that reduced motion support was already implemented in `global.css` via `@media (prefers-reduced-motion: reduce)` query
 
 ## Remaining Work (Next Priority)
 
