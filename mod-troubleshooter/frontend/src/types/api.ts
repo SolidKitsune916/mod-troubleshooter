@@ -535,3 +535,20 @@ export const QuotaSchema = z.object({
 
 /** Quota type export */
 export type Quota = z.infer<typeof QuotaSchema>;
+
+// ============================================
+// Supported Games Types
+// ============================================
+
+/** Supported game from API */
+export const SupportedGameSchema = z.object({
+  id: z.string(),
+  domainName: z.string(),
+  label: z.string(),
+});
+
+/** Array of supported games */
+export const SupportedGamesSchema = z.array(SupportedGameSchema);
+
+/** Supported game type export */
+export type SupportedGame = z.infer<typeof SupportedGameSchema>;

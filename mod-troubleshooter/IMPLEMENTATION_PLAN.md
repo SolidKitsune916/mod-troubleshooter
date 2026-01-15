@@ -366,9 +366,10 @@
   - Added GET /api/quota endpoint
   - Priority: 35
 
-- [ ] **US-036**: Add games endpoint for dynamic game support
-  - `GET /api/games` - list supported games
-  - Load game configs from database
+- [x] **US-036**: Add games endpoint for dynamic game support
+  - `GET /api/games` - list supported games with IDs, labels, and Nexus domain names
+  - Frontend service (gamesService.ts) and hook (useGames.ts) for consuming the endpoint
+  - Backend tests for games handler
   - Priority: 36
 
 ### FOMOD Enhancements

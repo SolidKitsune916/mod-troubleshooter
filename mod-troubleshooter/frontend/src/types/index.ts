@@ -115,6 +115,8 @@ export type {
   ConflictAnalyzeResponse,
   // Quota types
   Quota,
+  // Supported Games types
+  SupportedGame,
 } from './api.ts';
 
 export {
@@ -177,4 +179,7 @@ export {
   ConflictAnalyzeResponseSchema,
   // Quota schema
   QuotaSchema,
+  // Supported Games schemas
+  SupportedGameSchema,
+  SupportedGamesSchema,
 } from './api.ts';

@@ -14,3 +14,4 @@ export {
   analyzeConflicts,
 } from './conflictService.ts';
 export { fetchQuota } from './quotaService.ts';
+export { fetchGames } from './gamesService.ts';

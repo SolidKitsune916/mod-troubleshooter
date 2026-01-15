@@ -96,6 +96,10 @@ func main() {
 	quotaHandler := handlers.NewQuotaHandler(clientMgr)
 	mux.HandleFunc("GET /api/quota", quotaHandler.GetQuota)
 
+	// Games endpoint for dynamic game support
+	gameHandler := handlers.NewGameHandler()
+	mux.HandleFunc("GET /api/games", gameHandler.GetGames)
+
 	// Collection endpoints with dynamic client lookup
 	collectionHandler := handlers.NewDynamicCollectionHandler(clientMgr)
 	mux.HandleFunc("GET /api/collections/{slug}", collectionHandler.GetCollection)
