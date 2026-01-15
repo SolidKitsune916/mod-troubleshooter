@@ -484,6 +484,8 @@
   - Consistent focus indicators using focus-visible:outline styling
   - Fixed: Added Escape key to close mobile sidebar overlay
   - Enhanced: Added arrow key support to FOMOD file tree (ArrowRight to expand, ArrowLeft to collapse)
+  - Added focus-visible styling to: search clear button, sidebar toggle, selection buttons, category pills, collection checkboxes
+  - Increased category pill min-height to 44px for WCAG AA touch target compliance
   - Skip links, focus management in modals, proper focus order all verified
   - WCAG 2.2 AA compliance confirmed
   - Priority: 60
