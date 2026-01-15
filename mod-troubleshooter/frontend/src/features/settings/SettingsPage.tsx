@@ -6,6 +6,7 @@ import {
   useValidateApiKey,
 } from '@hooks/useSettings.ts';
 import { ApiError } from '@services/api.ts';
+import styles from './SettingsPage.module.css';
 
 /** Props for SettingsPage */
 interface SettingsPageProps {
@@ -14,12 +15,12 @@ interface SettingsPageProps {
 
 /** Loading skeleton for settings */
 const SettingsSkeleton: React.FC = () => (
-  <div className="space-y-6 animate-pulse">
-    <div className="p-6 rounded-sm bg-bg-card border border-border">
-      <div className="h-6 w-1/3 bg-bg-secondary rounded-xs mb-4" />
-      <div className="h-4 w-2/3 bg-bg-secondary rounded-xs mb-6" />
-      <div className="h-10 w-full bg-bg-secondary rounded-xs mb-4" />
-      <div className="h-10 w-32 bg-bg-secondary rounded-xs" />
+  <div className={styles.skeleton}>
+    <div className={styles.skeletonCard}>
+      <div className={styles.skeletonLine} style={{ width: '33%', marginBottom: 'var(--spacing-4)' }} />
+      <div className={styles.skeletonLine} style={{ width: '66%', marginBottom: 'var(--spacing-6)' }} />
+      <div className={styles.skeletonLine} style={{ width: '100%', marginBottom: 'var(--spacing-4)', height: '44px' }} />
+      <div className={styles.skeletonLine} style={{ width: '128px', height: '44px' }} />
     </div>
   </div>
 );
@@ -100,22 +101,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
     }
   };
 
-  const isProcessing =
-    updateSettings.isPending || validateApiKey.isPending;
+  const isProcessing = updateSettings.isPending || validateApiKey.isPending;
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-text-secondary hover:text-text-primary
-            focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-            transition-colors"
-        >
+      <div className={styles.container}>
+        <button onClick={onBack} className={styles.backButton}>
           <span aria-hidden="true">←</span>
           <span>Back to Collections</span>
         </button>
-        <h2 className="text-2xl font-bold text-text-primary">Settings</h2>
+        <h2 className={styles.pageTitle}>Settings</h2>
         <SettingsSkeleton />
       </div>
     );
@@ -123,65 +118,41 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
 
   if (fetchError) {
     return (
-      <div className="space-y-6">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-text-secondary hover:text-text-primary
-            focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-            transition-colors"
-        >
+      <div className={styles.container}>
+        <button onClick={onBack} className={styles.backButton}>
           <span aria-hidden="true">←</span>
           <span>Back to Collections</span>
         </button>
-        <h2 className="text-2xl font-bold text-text-primary">Settings</h2>
-        <div
-          role="alert"
-          className="p-6 rounded-sm bg-error/10 border border-error text-center"
-        >
-          <p className="text-error font-medium mb-4">
-            Failed to load settings
-          </p>
-          <button
-            onClick={() => refetch()}
-            className="min-h-11 px-6 py-2 rounded-sm
-              bg-error text-white font-medium
-              hover:bg-error/80
-              focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-              transition-colors motion-reduce:transition-none"
-          >
-            Try Again
-          </button>
+        <h2 className={styles.pageTitle}>Settings</h2>
+        <div role="alert" className={styles.errorMessage}>
+          <p className={styles.errorText}>Failed to load settings</p>
         </div>
+        <button onClick={() => refetch()} className={styles.btnDanger}>
+          Try Again
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-text-secondary hover:text-text-primary
-          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-          transition-colors"
-      >
+    <div className={styles.container}>
+      <button onClick={onBack} className={styles.backButton}>
         <span aria-hidden="true">←</span>
         <span>Back to Collections</span>
       </button>
 
-      <h2 className="text-2xl font-bold text-text-primary">Settings</h2>
+      <h2 className={styles.pageTitle}>Settings</h2>
 
-      <div className="p-6 rounded-sm bg-bg-card border border-border">
-        <h3 className="text-lg font-semibold text-text-primary mb-2">
-          Nexus Mods API Key
-        </h3>
-        <p className="text-text-secondary text-sm mb-4">
+      <div className={styles.card}>
+        <h3 className={styles.cardTitle}>Nexus Mods API Key</h3>
+        <p className={styles.cardDescription}>
           Enter your Nexus Mods API key to enable collection browsing. You can
           find your API key in your{' '}
           <a
             href="https://www.nexusmods.com/users/myaccount?tab=api"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-accent hover:underline focus-visible:outline-3 focus-visible:outline-focus"
+            className={styles.link}
           >
             Nexus Mods account settings
           </a>
@@ -189,15 +160,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
         </p>
 
         {/* Current status */}
-        <div className="mb-4 p-3 rounded-xs bg-bg-secondary">
-          <p className="text-sm text-text-secondary">
-            <span className="font-medium">Current status:</span>{' '}
+        <div className={styles.statusBox}>
+          <p className={styles.statusText}>
+            <span className={styles.statusLabel}>Current status:</span>{' '}
             {settings?.keyConfigured ? (
-              <span className="text-success">
+              <span className={styles.statusConfigured}>
                 API key configured ({settings.nexusApiKey})
               </span>
             ) : (
-              <span className="text-warning">No API key configured</span>
+              <span className={styles.statusNotConfigured}>No API key configured</span>
             )}
           </p>
         </div>
@@ -208,9 +179,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             id={successMessageId}
             role="status"
             aria-live="polite"
-            className="mb-4 p-3 rounded-xs bg-success/10 border border-success"
+            className={styles.successMessage}
           >
-            <p className="text-success text-sm">{successMessage}</p>
+            <p className={styles.successText}>{successMessage}</p>
           </div>
         )}
 
@@ -219,21 +190,18 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
           <div
             id={errorMessageId}
             role="alert"
-            className="mb-4 p-3 rounded-xs bg-error/10 border border-error"
+            className={styles.errorMessage}
           >
-            <p className="text-error text-sm">{localError}</p>
+            <p className={styles.errorText}>{localError}</p>
           </div>
         )}
 
         {/* API Key input */}
-        <div className="mb-4">
-          <label
-            htmlFor={apiKeyInputId}
-            className="block text-sm font-medium text-text-primary mb-2"
-          >
-            API Key {!settings?.keyConfigured && <span className="text-error">*</span>}
+        <div className={styles.formGroup}>
+          <label htmlFor={apiKeyInputId} className={styles.label}>
+            API Key {!settings?.keyConfigured && <span className={styles.required}>*</span>}
           </label>
-          <div className="relative">
+          <div className={styles.inputWrapper}>
             <input
               ref={inputRef}
               id={apiKeyInputId}
@@ -254,24 +222,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
               aria-invalid={!!localError}
               aria-describedby={localError ? errorMessageId : undefined}
               disabled={isProcessing}
-              className="w-full min-h-11 px-4 py-2 pr-24 rounded-sm
-                bg-bg-secondary border border-border text-text-primary
-                placeholder:text-text-muted
-                hover:border-border-hover
-                focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20
-                disabled:opacity-50 disabled:cursor-not-allowed
-                transition-colors"
+              className={styles.input}
             />
             <button
               type="button"
               onClick={() => setShowKey(!showKey)}
               disabled={isProcessing}
-              className="absolute right-2 top-1/2 -translate-y-1/2
-                px-3 py-1 text-xs font-medium text-text-secondary
-                hover:text-text-primary
-                focus-visible:outline-3 focus-visible:outline-focus
-                disabled:opacity-50
-                transition-colors"
+              className={styles.showButton}
               aria-label={showKey ? 'Hide API key' : 'Show API key'}
             >
               {showKey ? 'Hide' : 'Show'}
@@ -280,16 +237,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-wrap gap-3">
+        <div className={styles.buttonGroup}>
           <button
             onClick={handleValidate}
             disabled={isProcessing || !apiKey.trim()}
-            className="min-h-11 px-6 py-2 rounded-sm
-              bg-bg-secondary border border-border text-text-primary font-medium
-              hover:bg-bg-tertiary hover:border-border-hover
-              focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-              disabled:opacity-50 disabled:cursor-not-allowed
-              transition-colors motion-reduce:transition-none"
+            className={styles.btnSecondary}
           >
             {validateApiKey.isPending ? 'Validating...' : 'Validate'}
           </button>
@@ -297,12 +249,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
           <button
             onClick={handleSave}
             disabled={isProcessing || !apiKey.trim()}
-            className="min-h-11 px-6 py-2 rounded-sm
-              bg-accent text-white font-medium
-              hover:bg-accent/80
-              focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-              disabled:opacity-50 disabled:cursor-not-allowed
-              transition-colors motion-reduce:transition-none"
+            className={styles.btnPrimary}
           >
             {updateSettings.isPending ? 'Saving...' : 'Save'}
           </button>
@@ -311,12 +258,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             <button
               onClick={handleClear}
               disabled={isProcessing}
-              className="min-h-11 px-6 py-2 rounded-sm
-                bg-error/10 border border-error text-error font-medium
-                hover:bg-error/20
-                focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-                disabled:opacity-50 disabled:cursor-not-allowed
-                transition-colors motion-reduce:transition-none"
+              className={styles.btnDanger}
             >
               Clear Key
             </button>
@@ -325,23 +267,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
       </div>
 
       {/* Help section */}
-      <div className="p-6 rounded-sm bg-bg-card border border-border">
-        <h3 className="text-lg font-semibold text-text-primary mb-2">
-          About API Keys
-        </h3>
-        <ul className="text-text-secondary text-sm space-y-2 list-disc list-inside">
-          <li>
-            A Nexus Mods API key is required to browse collections
-          </li>
-          <li>
-            Free accounts have limited API requests (1000/day)
-          </li>
-          <li>
-            Premium accounts have higher limits (2500/day)
-          </li>
-          <li>
-            Your API key is stored locally and sent directly to Nexus Mods
-          </li>
+      <div className={styles.card}>
+        <h3 className={styles.cardTitle}>About API Keys</h3>
+        <ul className={styles.helpList}>
+          <li>A Nexus Mods API key is required to browse collections</li>
+          <li>Free accounts have limited API requests (1000/day)</li>
+          <li>Premium accounts have higher limits (2500/day)</li>
+          <li>Your API key is stored locally and sent directly to Nexus Mods</li>
         </ul>
       </div>
     </div>

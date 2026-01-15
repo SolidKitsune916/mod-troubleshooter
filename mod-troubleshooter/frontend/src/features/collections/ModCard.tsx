@@ -1,4 +1,5 @@
 import type { ModFileReference } from '@/types/index.ts';
+import styles from './ModCard.module.css';
 
 interface ModCardProps {
   modFile: ModFileReference;
@@ -28,50 +29,36 @@ export const ModCard: React.FC<ModCardProps> = ({ modFile }) => {
   const isOptional = modFile.optional;
 
   return (
-    <article
-      className="flex gap-4 p-4 rounded-sm bg-bg-card border border-border
-        hover:border-border-hover hover:bg-bg-hover
-        transition-colors motion-reduce:transition-none"
-    >
+    <article className={styles.card}>
       {pictureUrl ? (
         <img
           src={pictureUrl}
           alt=""
-          className="w-20 h-20 rounded-xs object-cover flex-shrink-0"
+          className={styles.image}
           loading="lazy"
         />
       ) : (
-        <div
-          className="w-20 h-20 rounded-xs bg-bg-secondary flex-shrink-0
-            flex items-center justify-center text-text-muted"
-          aria-hidden="true"
-        >
+        <div className={styles.imagePlaceholder} aria-hidden="true">
           No Image
         </div>
       )}
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start gap-2 mb-1">
-          <h3 className="font-semibold text-text-primary truncate">{modName}</h3>
+      <div className={styles.content}>
+        <div className={styles.titleRow}>
+          <h3 className={styles.title}>{modName}</h3>
           {isOptional && (
-            <span className="flex-shrink-0 px-2 py-0.5 text-xs rounded-xs bg-secondary/20 text-secondary">
-              Optional
-            </span>
+            <span className={styles.optionalBadge}>Optional</span>
           )}
         </div>
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-secondary mb-2">
+        <div className={styles.meta}>
           {modVersion && <span>v{modVersion}</span>}
           <span>by {modAuthor}</span>
           {fileSize > 0 && <span>{formatFileSize(fileSize)}</span>}
-          {category && (
-            <span className="text-text-muted">{category}</span>
-          )}
+          {category && <span className={styles.category}>{category}</span>}
         </div>
 
-        {modSummary && (
-          <p className="text-sm text-text-secondary line-clamp-2">{modSummary}</p>
-        )}
+        {modSummary && <p className={styles.summary}>{modSummary}</p>}
       </div>
     </article>
   );

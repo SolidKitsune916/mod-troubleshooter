@@ -1,0 +1,104 @@
+:root {
+  /* Primary - Deep obsidian for immersive dark UI */
+  --color-primary: #1a1a1f;
+  --color-primary-deep: #121215;
+  --color-primary-soft: #2a2a32;
+  
+  /* Accent - Glowing cyan for mystical energy */
+  --color-accent: #00e5e5;
+  --color-accent-soft: #3dd9d9;
+  --color-accent-subtle: rgba(0, 229, 229, 0.1);
+  --color-accent-glow: rgba(0, 229, 229, 0.4);
+  
+  /* Secondary - Deep purple for magical elements */
+  --color-secondary: #6b4d8a;
+  --color-secondary-soft: #8b6aab;
+  --color-secondary-subtle: rgba(107, 77, 138, 0.15);
+  
+  /* Backgrounds - Layered darkness */
+  --color-bg: #121215;
+  --color-surface: #1a1a1f;
+  --color-surface-elevated: #2a2a32;
+  --color-surface-hover: #35353f;
+  
+  /* Text - Readable on dark backgrounds */
+  --color-text-primary: #e8e8ec;
+  --color-text-secondary: #9999a8;
+  --color-text-muted: #5c5c6e;
+  --color-text-accent: #00e5e5;
+  
+  /* Metallic accents - For borders and decorative elements */
+  --color-bronze: #8b7355;
+  --color-bronze-soft: #a68b6a;
+  --color-steel: #5c5c6e;
+  
+  /* Borders */
+  --color-border: #35353f;
+  --color-border-subtle: #2a2a32;
+  --color-border-glow: rgba(0, 229, 229, 0.3);
+  
+  /* Semantic */
+  --color-success: #10b981;
+  --color-success-soft: rgba(16, 185, 129, 0.15);
+  --color-warning: #f59e0b;
+  --color-warning-soft: rgba(245, 158, 11, 0.15);
+  --color-error: #ef4444;
+  --color-error-soft: rgba(239, 68, 68, 0.15);
+  --color-info: #3b82f6;
+  --color-info-soft: rgba(59, 130, 246, 0.15);
+  
+  /* Special effects */
+  --color-xp-gold: #fbbf24;
+  --color-rare: #a855f7;
+  --color-epic: #f472b6;
+  --color-legendary: #fb923c;
+  
+  /* Typography - Font Families */
+  --font-display: 'Rajdhani', 'Exo 2', 'Orbitron', system-ui, sans-serif;
+  --font-body: 'Inter', 'Rubik', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  
+  /* Spacing Scale (8px base) */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  
+  /* Typography Scale */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+  --font-size-3xl: 40px;
+  --font-size-display: 56px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+  
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 250ms ease;
+  
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+  
+  /* Layout */
+  --header-height: 80px;
+  --scroll-offset: 130px;
+}

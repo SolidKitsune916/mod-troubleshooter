@@ -281,8 +281,9 @@ func (h *ConflictHandler) fetchModManifests(ctx context.Context, client *nexus.C
 			LoadOrder: i,
 		}
 
-		// Get download links
-		links, err := client.GetModFileDownloadLinks(ctx, mod.Game, mod.NexusModID, mod.FileID)
+		// Get download links (map game ID to Nexus domain)
+		modGameDomain := GetNexusDomain(mod.Game)
+		links, err := client.GetModFileDownloadLinks(ctx, modGameDomain, mod.NexusModID, mod.FileID)
 		if err != nil {
 			// Log and continue with empty manifest
 			log.Printf("Warning: could not get download links for mod %s: %v", mod.ModID, err)

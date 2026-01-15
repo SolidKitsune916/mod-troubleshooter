@@ -62,8 +62,11 @@ func (h *DownloadHandler) GetModFileDownloadLinks(w http.ResponseWriter, r *http
 		return
 	}
 
+	// Map game ID to Nexus domain name
+	gameDomain := GetNexusDomain(game)
+
 	// Fetch download links from Nexus API
-	links, err := client.GetModFileDownloadLinks(ctx, game, modID, fileID)
+	links, err := client.GetModFileDownloadLinks(ctx, gameDomain, modID, fileID)
 	if err != nil {
 		handleDownloadError(w, err)
 		return

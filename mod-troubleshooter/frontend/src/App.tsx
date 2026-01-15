@@ -1,7 +1,13 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 import { CollectionBrowser } from '@features/collections/index.ts';
 import { SettingsPage } from '@features/settings/index.ts';
+import { Header } from '@components/Header/index.ts';
+import { Sidebar } from '@components/Sidebar/index.ts';
+import { SkipLinks } from '@components/SkipLinks/index.ts';
+import { useViewerCollections, useSearch, useMobileMenu } from '@hooks/index.ts';
+
+import styles from './App.module.css';
 
 /** Page type for simple state-based routing */
 type Page = 'collections' | 'settings';
@@ -9,77 +15,127 @@ type Page = 'collections' | 'settings';
 /** Main application component */
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('collections');
+  const { isSidebarOpen, toggleSidebar, closeSidebar } = useMobileMenu();
+  const { searchQuery, setSearchQuery } = useSearch();
 
-  return (
-    <div className="min-h-screen bg-bg-primary">
-      {/* Skip link for accessibility */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4
-          px-4 py-2 bg-accent text-white rounded-sm z-50
-          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2"
-      >
-        Skip to main content
-      </a>
+  const {
+    data,
+    loading,
+    error,
+    currentGame,
+    selectedCollections,
+    selectedCollectionsList,
+    currentCollection,
+    currentView,
+    availableCategories,
+    setCurrentGame,
+    selectCollection,
+    selectAll,
+    deselectAll,
+    showAllCollections,
+    showSingleCollection,
+  } = useViewerCollections();
 
-      <header className="border-b border-border bg-bg-card">
-        <div className="max-w-6xl mx-auto px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-text-primary">
-                Mod Troubleshooter
-              </h1>
-              <p className="text-sm text-text-secondary">
-                Visualize, analyze, and troubleshoot Skyrim SE mod collections
-              </p>
-            </div>
+  const handleCategoryClick = useCallback((categoryName: string) => {
+    const categoryId = `category-${categoryName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
+    const element = document.getElementById(categoryId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    closeSidebar();
+  }, [closeSidebar]);
 
-            <nav aria-label="Main navigation">
-              <ul className="flex items-center gap-2">
-                <li>
-                  <button
-                    onClick={() => setCurrentPage('collections')}
-                    aria-current={currentPage === 'collections' ? 'page' : undefined}
-                    className={`min-h-11 px-4 py-2 rounded-sm font-medium
-                      focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-                      transition-colors motion-reduce:transition-none
-                      ${
-                        currentPage === 'collections'
-                          ? 'bg-accent text-white'
-                          : 'text-text-secondary hover:text-text-primary hover:bg-bg-secondary'
-                      }`}
-                  >
-                    Collections
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => setCurrentPage('settings')}
-                    aria-current={currentPage === 'settings' ? 'page' : undefined}
-                    className={`min-h-11 px-4 py-2 rounded-sm font-medium
-                      focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-                      transition-colors motion-reduce:transition-none
-                      ${
-                        currentPage === 'settings'
-                          ? 'bg-accent text-white'
-                          : 'text-text-secondary hover:text-text-primary hover:bg-bg-secondary'
-                      }`}
-                  >
-                    Settings
-                  </button>
-                </li>
-              </ul>
-            </nav>
+  // Loading state
+  if (loading) {
+    return (
+      <div className={styles.app}>
+        <SkipLinks />
+        <Header
+          currentGame={currentGame}
+          onGameChange={setCurrentGame}
+          onMenuToggle={toggleSidebar}
+        />
+        <div className={styles.container}>
+          <div className={styles.loadingState} role="status" aria-label="Loading collections">
+            <div className={styles.loadingSpinner} />
+            <p>Loading collections...</p>
           </div>
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      <main id="main-content" className="max-w-6xl mx-auto p-8">
-        {currentPage === 'collections' && <CollectionBrowser />}
-        {currentPage === 'settings' && (
-          <SettingsPage onBack={() => setCurrentPage('collections')} />
-        )}
-      </main>
+  // Error state
+  if (error) {
+    return (
+      <div className={styles.app}>
+        <SkipLinks />
+        <Header
+          currentGame={currentGame}
+          onGameChange={setCurrentGame}
+          onMenuToggle={toggleSidebar}
+        />
+        <div className={styles.container}>
+          <div className={styles.errorState} role="alert">
+            <h2>Error loading data</h2>
+            <p>{error}</p>
+            <p>Make sure data files exist in the public/data folder or the API is running.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No data state
+  if (!data) {
+    return null;
+  }
+
+  return (
+    <div className={styles.app}>
+      <SkipLinks />
+
+      <Header
+        currentGame={currentGame}
+        onGameChange={setCurrentGame}
+        onMenuToggle={toggleSidebar}
+        collectionCount={data.collections.length}
+        totalMods={data.totalMods}
+      />
+
+      <div className={styles.container}>
+        <Sidebar
+          collections={data.collections}
+          selectedCollections={selectedCollections}
+          onSelectCollection={selectCollection}
+          onSelectAll={selectAll}
+          onDeselectAll={deselectAll}
+          onShowAllCollections={showAllCollections}
+          onShowSingleCollection={showSingleCollection}
+          isAllCollectionsActive={currentView === 'all'}
+          currentCollectionId={currentView !== 'all' ? currentView : undefined}
+          categories={availableCategories}
+          onCategoryClick={handleCategoryClick}
+          isMobileOpen={isSidebarOpen}
+          onMobileClose={closeSidebar}
+        />
+
+        <main id="main-content" className={styles.main} role="main" tabIndex={-1}>
+          {currentPage === 'collections' && (
+            <CollectionBrowser
+              gameId={currentGame}
+              collections={selectedCollectionsList}
+              currentCollection={currentCollection}
+              currentView={currentView}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
+          )}
+          {currentPage === 'settings' && (
+            <SettingsPage onBack={() => setCurrentPage('collections')} />
+          )}
+        </main>
+      </div>
     </div>
   );
 }

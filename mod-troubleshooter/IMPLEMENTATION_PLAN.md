@@ -129,13 +129,13 @@
   - Update when selections change
   - Priority: 18
 
-- [ ] **US-019**: Implement file preview panel
+- [x] **US-019**: Implement file preview panel
   - Show files that will be installed
   - Update based on current selections
   - Tree view of destination paths
   - Priority: 19
 
-- [ ] **US-020**: Add tree view mode
+- [x] **US-020**: Add tree view mode
   - Full FOMOD structure as collapsible tree
   - Alternative to wizard mode
   - Priority: 20
@@ -144,13 +144,13 @@
 
 ### Backend
 
-- [ ] **US-021**: Implement plugin header parser
+- [x] **US-021**: Implement plugin header parser
   - Read TES4 record from .esp/.esm/.esl
   - Extract master dependencies
   - Extract plugin flags
   - Priority: 21
 
-- [ ] **US-022**: Create load order analysis endpoint
+- [x] **US-022**: Create load order analysis endpoint
   - `GET /api/collections/:gameId/:slug/loadorder`
   - Parse plugins from collection mods
   - Build dependency graph
@@ -176,7 +176,7 @@
   - Expandable warning details
   - Priority: 25
 
-- [ ] **US-026**: Add dependency graph view
+- [x] **US-026**: Add dependency graph view
   - React Flow or D3 visualization
   - Interactive node selection
   - Priority: 26
@@ -185,24 +185,24 @@
 
 ### Backend
 
-- [ ] **US-027**: Implement file manifest extraction
+- [x] **US-027**: Implement file manifest extraction
   - Extract file list from archives
   - Normalize paths
   - Calculate hashes for dedup
   - Priority: 27
 
-- [ ] **US-028**: Implement conflict detection algorithm
+- [x] **US-028**: Implement conflict detection algorithm
   - Build file → mod map
   - Identify multi-source files
   - Classify by file type
   - Priority: 28
 
-- [ ] **US-029**: Implement conflict severity scoring
+- [x] **US-029**: Implement conflict severity scoring
   - Score based on file type
   - Consider known incompatibilities
   - Priority: 29
 
-- [ ] **US-030**: Create conflict analysis endpoint
+- [x] **US-030**: Create conflict analysis endpoint
   - `POST /api/conflicts/analyze`
   - Analyze subset or full collection
   - Return detailed conflict report
@@ -210,24 +210,24 @@
 
 ### Frontend
 
-- [ ] **US-031**: Create ConflictView container
+- [x] **US-031**: Create ConflictView container
   - Layout with filters, list, details
   - Summary header
   - Priority: 31
 
-- [ ] **US-032**: Implement ConflictList component
+- [x] **US-032**: Implement ConflictList component
   - Display conflicts with severity badges
   - Show conflicting mods and winner
   - Priority: 32
 
-- [ ] **US-033**: Implement conflict filters
+- [x] **US-033**: Implement conflict filters
   - By severity
   - By file type
   - By mod
   - Search by path
   - Priority: 33
 
-- [ ] **US-034**: Implement ConflictDetails panel
+- [x] **US-034**: Implement ConflictDetails panel
   - Full conflict information
   - Resolution suggestions
   - Priority: 34
@@ -354,6 +354,95 @@
   - Error/warning counts in panel header
   - "No Issues Found" success state when load order is healthy
   - Implemented as part of US-023 within LoadOrderView.tsx
+
+## Phase 5: Enhanced Features (High Priority)
+
+### Backend Improvements
+
+- [ ] **US-035**: Implement rate limiting with exponential backoff
+  - Track Nexus API quota via response headers
+  - Automatic backoff when quota low
+  - User-friendly quota display in UI
+  - Priority: 35
+
+- [ ] **US-036**: Add games endpoint for dynamic game support
+  - `GET /api/games` - list supported games
+  - Load game configs from database
+  - Priority: 36
+
+### FOMOD Enhancements
+
+- [ ] **US-037**: Implement FOMOD comparison mode
+  - Compare two FOMOD selections side-by-side
+  - Highlight differences in selections
+  - Priority: 37
+
+- [ ] **US-038**: Add FOMOD export/import
+  - Export selections to JSON
+  - Import selections from file
+  - Priority: 38
+
+- [ ] **US-039**: Add FOMOD dependency graph visualization
+  - Show option dependencies as graph
+  - Highlight conditional relationships
+  - Priority: 39
+
+- [ ] **US-040**: Add FOMOD search functionality
+  - Search options across all steps
+  - Filter by option type
+  - Priority: 40
+
+### Load Order Enhancements
+
+- [ ] **US-043**: Export load order
+  - Export to plugins.txt format
+  - Export to loadorder.txt format
+  - Priority: 43
+
+- [ ] **US-044**: Load order comparison mode
+  - Compare two load orders side-by-side
+  - Highlight differences
+  - Priority: 44
+
+- [ ] **US-046**: Slot limit warning
+  - Warn when approaching 254 plugin limit
+  - ESL slot counting
+  - Priority: 46
+
+### Conflict Enhancements
+
+- [ ] **US-048**: Export conflict report
+  - Export to CSV/JSON format
+  - Include all conflict details
+  - Priority: 48
+
+- [ ] **US-049**: Conflict graph visualization
+  - Show mod relationships as graph
+  - Highlight problematic dependencies
+  - Priority: 49
+
+### UI/UX Improvements
+
+- [ ] **US-055**: Keyboard shortcuts
+  - Navigation shortcuts
+  - Action shortcuts with help overlay
+  - Priority: 55
+
+- [ ] **US-056**: Loading skeletons everywhere
+  - Consistent skeleton UI across all features
+  - Priority: 56
+
+### Accessibility
+
+- [ ] **US-059**: Reduced motion support
+  - Respect prefers-reduced-motion
+  - Disable animations when preferred
+  - Priority: 59
+
+- [ ] **US-060**: Full keyboard navigation audit
+  - Ensure all interactive elements focusable
+  - Proper focus order
+  - Priority: 60
 
 ## Discovered Issues
 

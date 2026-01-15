@@ -1,39 +1,49 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import type { GameId, ViewerCollection, ViewerMod } from '@/types';
 
 import { useCollection } from '@hooks/useCollections.ts';
 import { ApiError } from '@services/api.ts';
 import { LoadOrderView } from '@features/loadorder/index.ts';
 import { ConflictView } from '@features/conflicts/index.ts';
+import { HeroBanner } from '@components/HeroBanner/index.ts';
+import { SearchBar } from '@components/SearchBar/index.ts';
+import { deduplicateMods, groupModsByCategory } from '@/utils/dataLoader';
 
 import { CollectionSearch } from './CollectionSearch.tsx';
 import { CollectionHeader } from './CollectionHeader.tsx';
-import { ModList } from './ModList.tsx';
+import styles from './CollectionBrowser.module.css';
 
 /** View modes available in the collection browser */
 type ViewMode = 'mods' | 'loadorder' | 'conflicts';
 
+interface CollectionBrowserProps {
+  gameId: GameId;
+  collections: ViewerCollection[];
+  currentCollection: ViewerCollection | null;
+  currentView: 'all' | string;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+}
+
 /** Loading skeleton for collection */
 const CollectionSkeleton: React.FC = () => (
-  <div className="space-y-6 animate-pulse">
-    <div className="flex gap-6 p-6 rounded-sm bg-bg-card border border-border">
-      <div className="w-32 h-32 rounded-xs bg-bg-secondary" />
-      <div className="flex-1 space-y-3">
-        <div className="h-8 w-2/3 bg-bg-secondary rounded-xs" />
-        <div className="h-4 w-1/2 bg-bg-secondary rounded-xs" />
-        <div className="h-4 w-full bg-bg-secondary rounded-xs" />
+  <div className={styles.skeleton}>
+    <div className={styles.skeletonHeader}>
+      <div className={styles.skeletonImage} />
+      <div className={styles.skeletonContent}>
+        <div className={styles.skeletonLine} style={{ width: '66%' }} />
+        <div className={styles.skeletonLine} style={{ width: '50%' }} />
+        <div className={styles.skeletonLine} style={{ width: '100%' }} />
       </div>
     </div>
-    <div className="space-y-3">
+    <div className={styles.skeletonList}>
       {[1, 2, 3].map((i) => (
-        <div
-          key={i}
-          className="flex gap-4 p-4 rounded-sm bg-bg-card border border-border"
-        >
-          <div className="w-20 h-20 rounded-xs bg-bg-secondary" />
-          <div className="flex-1 space-y-2">
-            <div className="h-5 w-1/3 bg-bg-secondary rounded-xs" />
-            <div className="h-4 w-1/4 bg-bg-secondary rounded-xs" />
-            <div className="h-4 w-full bg-bg-secondary rounded-xs" />
+        <div key={i} className={styles.skeletonItem}>
+          <div className={styles.skeletonThumb} />
+          <div className={styles.skeletonItemContent}>
+            <div className={styles.skeletonLine} style={{ width: '33%' }} />
+            <div className={styles.skeletonLine} style={{ width: '25%' }} />
+            <div className={styles.skeletonLine} style={{ width: '100%' }} />
           </div>
         </div>
       ))}
@@ -63,19 +73,9 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ error, onRetry }) => {
   }
 
   return (
-    <div
-      role="alert"
-      className="p-6 rounded-sm bg-error/10 border border-error text-center"
-    >
-      <p className="text-error font-medium mb-4">{message}</p>
-      <button
-        onClick={onRetry}
-        className="min-h-11 px-6 py-2 rounded-sm
-          bg-error text-white font-medium
-          hover:bg-error/80
-          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-          transition-colors motion-reduce:transition-none"
-      >
+    <div role="alert" className={styles.errorDisplay}>
+      <p className={styles.errorMessage}>{message}</p>
+      <button onClick={onRetry} className={styles.retryButton}>
         Try Again
       </button>
     </div>
@@ -89,20 +89,13 @@ interface ViewModeTabsProps {
 }
 
 const ViewModeTabs: React.FC<ViewModeTabsProps> = ({ currentMode, onModeChange }) => (
-  <nav aria-label="Collection view modes" className="mb-6">
-    <ul className="flex gap-2 border-b border-border pb-2">
+  <nav aria-label="Collection view modes" className={styles.viewModeTabs}>
+    <ul className={styles.tabList}>
       <li>
         <button
           onClick={() => onModeChange('mods')}
           aria-current={currentMode === 'mods' ? 'page' : undefined}
-          className={`min-h-11 px-4 py-2 rounded-sm font-medium
-            focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-            transition-colors motion-reduce:transition-none
-            ${
-              currentMode === 'mods'
-                ? 'bg-accent text-white'
-                : 'text-text-secondary hover:text-text-primary hover:bg-bg-secondary'
-            }`}
+          className={`${styles.tabButton} ${currentMode === 'mods' ? styles.tabButtonActive : ''}`}
         >
           Mod Files
         </button>
@@ -111,14 +104,7 @@ const ViewModeTabs: React.FC<ViewModeTabsProps> = ({ currentMode, onModeChange }
         <button
           onClick={() => onModeChange('loadorder')}
           aria-current={currentMode === 'loadorder' ? 'page' : undefined}
-          className={`min-h-11 px-4 py-2 rounded-sm font-medium
-            focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-            transition-colors motion-reduce:transition-none
-            ${
-              currentMode === 'loadorder'
-                ? 'bg-accent text-white'
-                : 'text-text-secondary hover:text-text-primary hover:bg-bg-secondary'
-            }`}
+          className={`${styles.tabButton} ${currentMode === 'loadorder' ? styles.tabButtonActive : ''}`}
         >
           Load Order
         </button>
@@ -127,14 +113,7 @@ const ViewModeTabs: React.FC<ViewModeTabsProps> = ({ currentMode, onModeChange }
         <button
           onClick={() => onModeChange('conflicts')}
           aria-current={currentMode === 'conflicts' ? 'page' : undefined}
-          className={`min-h-11 px-4 py-2 rounded-sm font-medium
-            focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-            transition-colors motion-reduce:transition-none
-            ${
-              currentMode === 'conflicts'
-                ? 'bg-accent text-white'
-                : 'text-text-secondary hover:text-text-primary hover:bg-bg-secondary'
-            }`}
+          className={`${styles.tabButton} ${currentMode === 'conflicts' ? styles.tabButtonActive : ''}`}
         >
           Conflicts
         </button>
@@ -143,61 +122,195 @@ const ViewModeTabs: React.FC<ViewModeTabsProps> = ({ currentMode, onModeChange }
   </nav>
 );
 
+/** Category section for grouped mod display */
+interface CategorySectionProps {
+  categoryName: string;
+  mods: ViewerMod[];
+}
+
+const CategorySection: React.FC<CategorySectionProps> = ({ categoryName, mods }) => {
+  const categoryId = `category-${categoryName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
+  
+  return (
+    <section id={categoryId} className={styles.categorySection} aria-labelledby={`${categoryId}-title`}>
+      <h3 id={`${categoryId}-title`} className={styles.categorySectionTitle}>
+        {categoryName}
+        <span className={styles.categorySectionCount}>({mods.length})</span>
+      </h3>
+      <div className={styles.modGrid}>
+        {mods.map((mod) => (
+          <article key={mod.modId || `${mod.name}-${mod.author}`} className={styles.modCard}>
+            {mod.pictureUrl ? (
+              <img
+                src={mod.pictureUrl}
+                alt=""
+                className={styles.modCardImage}
+                loading="lazy"
+              />
+            ) : (
+              <div className={styles.modCardImagePlaceholder} aria-hidden="true">
+                No Image
+              </div>
+            )}
+            <div className={styles.modCardContent}>
+              <h4 className={styles.modCardTitle}>{mod.name}</h4>
+              <div className={styles.modCardMeta}>
+                {mod.version && <span>v{mod.version}</span>}
+                <span>by {mod.author || mod.uploader?.name || 'Unknown'}</span>
+              </div>
+              {mod.summary && (
+                <p className={styles.modCardSummary}>{mod.summary}</p>
+              )}
+              {mod.optional && (
+                <span className={styles.optionalBadge}>Optional</span>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+};
+
 /** Main collection browser container */
-export const CollectionBrowser: React.FC = () => {
-  const [slug, setSlug] = useState<string | null>(null);
+export const CollectionBrowser: React.FC<CollectionBrowserProps> = ({
+  gameId,
+  collections,
+  currentCollection,
+  currentView,
+  searchQuery,
+  onSearchChange,
+}) => {
+  const [apiSlug, setApiSlug] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('mods');
 
+  // API-based collection fetching (for advanced features)
   const {
-    data: collection,
-    isLoading,
-    error,
-    refetch,
-  } = useCollection(slug ?? '', !!slug);
+    data: apiCollection,
+    isLoading: apiLoading,
+    error: apiError,
+    refetch: apiRefetch,
+  } = useCollection(apiSlug ?? '', !!apiSlug);
 
-  const handleSearch = (newSlug: string) => {
-    setSlug(newSlug);
-    setViewMode('mods'); // Reset to mods view on new search
+  const handleApiSearch = (newSlug: string) => {
+    setApiSlug(newSlug);
+    setViewMode('mods');
   };
 
-  const modFiles = collection?.latestPublishedRevision?.modFiles ?? [];
-  const revisionNumber = collection?.latestPublishedRevision?.revisionNumber ?? 0;
+  // Get mods based on current view
+  const displayMods = useMemo(() => {
+    if (currentView === 'all') {
+      // Combine and deduplicate mods from all selected collections
+      const allMods = collections.flatMap((c) => c.mods);
+      return deduplicateMods(allMods);
+    } else if (currentCollection) {
+      return currentCollection.mods;
+    }
+    return [];
+  }, [currentView, collections, currentCollection]);
+
+  // Filter mods based on search query
+  const filteredMods = useMemo(() => {
+    if (!searchQuery.trim()) return displayMods;
+    const query = searchQuery.toLowerCase();
+    return displayMods.filter(
+      (mod) =>
+        mod.name.toLowerCase().includes(query) ||
+        mod.summary?.toLowerCase().includes(query) ||
+        mod.author?.toLowerCase().includes(query) ||
+        mod.uploader?.name?.toLowerCase().includes(query) ||
+        mod.category?.toLowerCase().includes(query)
+    );
+  }, [displayMods, searchQuery]);
+
+  // Group mods by category
+  const groupedMods = useMemo(() => {
+    return groupModsByCategory(filteredMods);
+  }, [filteredMods]);
+
+  // Get revision info for API features
+  const revisionNumber = apiCollection?.latestPublishedRevision?.revisionNumber ?? 0;
 
   return (
-    <div className="space-y-6">
-      <CollectionSearch onSearch={handleSearch} isLoading={isLoading} />
+    <div className={styles.collectionBrowser}>
+      <HeroBanner gameId={gameId} />
+      <SearchBar value={searchQuery} onChange={onSearchChange} />
 
-      {isLoading && <CollectionSkeleton />}
+      <div className={styles.contentArea}>
+        {/* API search for advanced features */}
+        <div className={styles.apiSection}>
+          <CollectionSearch onSearch={handleApiSearch} isLoading={apiLoading} />
 
-      {error && !isLoading && (
-        <ErrorDisplay error={error} onRetry={() => refetch()} />
-      )}
+          {apiLoading && <CollectionSkeleton />}
 
-      {collection && !isLoading && !error && (
-        <>
-          <div aria-live="polite" className="sr-only">
-            Loaded {collection.name} with {modFiles.length} mods
-          </div>
-          <CollectionHeader collection={collection} />
-          <ViewModeTabs currentMode={viewMode} onModeChange={setViewMode} />
-          {viewMode === 'mods' && <ModList modFiles={modFiles} />}
-          {viewMode === 'loadorder' && slug && revisionNumber > 0 && (
-            <LoadOrderView slug={slug} revision={revisionNumber} />
+          {apiError && !apiLoading && (
+            <ErrorDisplay error={apiError} onRetry={() => apiRefetch()} />
           )}
-          {viewMode === 'conflicts' && slug && revisionNumber > 0 && (
-            <ConflictView slug={slug} revision={revisionNumber} />
-          )}
-        </>
-      )}
 
-      {!slug && !isLoading && !error && (
-        <div className="text-center py-12 text-text-secondary">
-          <p className="text-lg mb-2">Enter a collection to get started</p>
-          <p className="text-sm text-text-muted">
-            Paste a Nexus Mods collection URL or enter the collection slug
-          </p>
+          {apiCollection && !apiLoading && !apiError && (
+            <>
+              <div aria-live="polite" className={styles.srOnly}>
+                Loaded {apiCollection.name} with{' '}
+                {apiCollection.latestPublishedRevision?.modFiles.length ?? 0} mods
+              </div>
+              <CollectionHeader collection={apiCollection} />
+              <ViewModeTabs currentMode={viewMode} onModeChange={setViewMode} />
+              {viewMode === 'loadorder' && apiSlug && revisionNumber > 0 && (
+                <LoadOrderView slug={apiSlug} revision={revisionNumber} />
+              )}
+              {viewMode === 'conflicts' && apiSlug && revisionNumber > 0 && (
+                <ConflictView slug={apiSlug} revision={revisionNumber} />
+              )}
+            </>
+          )}
         </div>
-      )}
+
+        {/* Viewer mode - show collections from JSON data */}
+        {collections.length > 0 && !apiCollection && (
+          <div className={styles.viewerSection}>
+            <div className={styles.viewerHeader}>
+              <h2 className={styles.viewerTitle}>
+                {currentView === 'all'
+                  ? `Browsing ${collections.length} Collection${collections.length !== 1 ? 's' : ''}`
+                  : currentCollection?.name ?? 'Collection'}
+              </h2>
+              <p className={styles.viewerSubtitle}>
+                {filteredMods.length} mod{filteredMods.length !== 1 ? 's' : ''}
+                {searchQuery && ` matching "${searchQuery}"`}
+              </p>
+            </div>
+
+            {groupedMods.length > 0 ? (
+              <div className={styles.categoriesContainer}>
+                {groupedMods.map(([category, mods]) => (
+                  <CategorySection key={category} categoryName={category} mods={mods} />
+                ))}
+              </div>
+            ) : (
+              <div className={styles.emptyState}>
+                <p className={styles.emptyStateTitle}>
+                  {searchQuery ? 'No mods match your search' : 'No mods to display'}
+                </p>
+                <p className={styles.emptyStateSubtitle}>
+                  {searchQuery
+                    ? 'Try adjusting your search terms'
+                    : 'Select collections from the sidebar to view their mods'}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Empty state when no collections and no API search */}
+        {collections.length === 0 && !apiSlug && !apiLoading && !apiError && (
+          <div className={styles.emptyState}>
+            <p className={styles.emptyStateTitle}>No collections selected</p>
+            <p className={styles.emptyStateSubtitle}>
+              Select collections from the sidebar or search for a collection above
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

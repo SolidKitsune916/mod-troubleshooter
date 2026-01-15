@@ -1,6 +1,6 @@
 import type { ModFileReference } from '@/types/index.ts';
-
 import { ModCard } from './ModCard.tsx';
+import styles from './ModList.module.css';
 
 interface ModListProps {
   modFiles: ModFileReference[];
@@ -13,23 +13,20 @@ export const ModList: React.FC<ModListProps> = ({ modFiles }) => {
 
   if (modFiles.length === 0) {
     return (
-      <div className="text-center py-8 text-text-secondary">
+      <div className={styles.emptyState}>
         <p>No mods found in this collection.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className={styles.container}>
       {requiredMods.length > 0 && (
-        <section aria-labelledby="required-mods-heading">
-          <h3
-            id="required-mods-heading"
-            className="text-lg font-semibold text-text-primary mb-4"
-          >
+        <section aria-labelledby="required-mods-heading" className={styles.section}>
+          <h3 id="required-mods-heading" className={styles.sectionTitle}>
             Required Mods ({requiredMods.length})
           </h3>
-          <div className="space-y-3">
+          <div className={styles.modList}>
             {requiredMods.map((modFile) => (
               <ModCard key={modFile.fileId} modFile={modFile} />
             ))}
@@ -38,14 +35,11 @@ export const ModList: React.FC<ModListProps> = ({ modFiles }) => {
       )}
 
       {optionalMods.length > 0 && (
-        <section aria-labelledby="optional-mods-heading">
-          <h3
-            id="optional-mods-heading"
-            className="text-lg font-semibold text-text-primary mb-4"
-          >
+        <section aria-labelledby="optional-mods-heading" className={styles.section}>
+          <h3 id="optional-mods-heading" className={styles.sectionTitle}>
             Optional Mods ({optionalMods.length})
           </h3>
-          <div className="space-y-3">
+          <div className={styles.modList}>
             {optionalMods.map((modFile) => (
               <ModCard key={modFile.fileId} modFile={modFile} />
             ))}

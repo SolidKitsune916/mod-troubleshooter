@@ -1,81 +1,29 @@
-# Project Operations
+## Build & Run
 
-## Frontend (React/Vite)
+Succinct rules for how to BUILD the project:
 
-```bash
-# Development
-npm run dev
+- Build: `npm run build`
+- Run: `npm run start`
+- Dev server: `npm run dev`
 
-# Production build
-npm run build
-```
+## Validation
 
-### Frontend Validation
+Run these after implementing to get immediate feedback:
 
-```bash
-npm run typecheck
-npm test
-npm run lint
-```
+- Tests: `npm test`
+- Typecheck: `npx tsc --noEmit`
+- Lint: `npm run lint`
 
-## Backend (Go)
+## Operational Notes
 
-```bash
-# Development (with hot reload)
-make dev
-# Or: air
-# Or: go run ./cmd/server
+Project: SolidKitsune Project
+Framework: Vite 7, Vite 7
+Language: mixed
 
-# Build
-make build
-```
+### Codebase Patterns
 
-### Backend Validation
-
-```bash
-go test -v ./...
-go vet ./...
-golangci-lint run
-```
-
-## Full Stack
-
-```bash
-# Run both (in separate terminals)
-# Terminal 1: npm run dev
-# Terminal 2: make dev
-
-# Test everything
-npm test && go test -v ./...
-```
-
-## Project Structure
-
-```
-src/                     # React frontend
-├── components/
-├── features/
-├── hooks/
-├── services/           # API client for Go backend
-├── store/
-├── types/
-└── utils/
-
-cmd/                     # Go backend entry points
-├── server/
-│   └── main.go
-
-internal/                # Go private packages
-├── handlers/
-├── models/
-├── repository/
-└── services/
-```
-
-## Rule Files Location
-
-Standards are defined in `.cursor/rules/*.mdc` - always load relevant rules before implementing.
+[Ralph will add learnings here as patterns are discovered]
 
 ## Operational Learnings
 
-<!-- Ralph adds learnings here as discoveries are made -->
+[Ralph will add learnings here about how to run/build the project]

@@ -99,8 +99,11 @@ func (h *FomodHandler) AnalyzeFomod(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Map game ID to Nexus domain name
+	gameDomain := GetNexusDomain(req.Game)
+
 	// Get download links from Nexus
-	links, err := client.GetModFileDownloadLinks(ctx, req.Game, req.ModID, req.FileID)
+	links, err := client.GetModFileDownloadLinks(ctx, gameDomain, req.ModID, req.FileID)
 	if err != nil {
 		handleFomodError(w, err)
 		return

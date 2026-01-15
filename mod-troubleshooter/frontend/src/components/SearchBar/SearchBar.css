@@ -1,0 +1,105 @@
+.search-container {
+  padding: var(--spacing-4) var(--spacing-8);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 80px;
+  z-index: 99;
+  margin-bottom: var(--spacing-2);
+}
+
+.search-wrapper {
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: var(--spacing-2) 2.5rem var(--spacing-2) 2.75rem;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  transition: all var(--transition-base);
+  min-height: 44px;
+  box-sizing: border-box;
+  line-height: 1.5;
+  font-family: var(--font-body);
+}
+
+.search-input::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-subtle);
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.search-wrapper.focused .search-icon {
+  color: var(--color-accent);
+}
+
+.search-clear {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--spacing-1);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  min-width: 32px;
+  min-height: 32px;
+  transition: all var(--transition-fast);
+  z-index: 2;
+}
+
+.search-clear:hover {
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+}
+
+.search-clear.visible {
+  display: flex;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .search-container {
+    padding: var(--spacing-2) var(--spacing-4);
+    top: 60px;
+  }
+
+  .search-wrapper {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-container {
+    padding: var(--spacing-2);
+  }
+}

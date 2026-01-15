@@ -82,7 +82,7 @@ func TestClient_Query(t *testing.T) {
 				resp := GraphQLResponse{
 					Data: map[string]interface{}{
 						"collection": map[string]interface{}{
-							"id":   "123",
+							"id":   123,
 							"name": "Test Collection",
 						},
 					},
