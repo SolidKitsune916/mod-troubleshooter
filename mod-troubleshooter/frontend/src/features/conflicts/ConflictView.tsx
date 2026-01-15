@@ -23,6 +23,7 @@ interface ConflictViewProps {
 interface ConflictHeaderProps {
   stats: ConflictStats;
   cached: boolean;
+  exportToolbar?: React.ReactNode;
 }
 
 interface ConflictFiltersProps {
@@ -133,6 +134,183 @@ function formatFileSize(bytes: number): string {
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
 }
+
+// ============================================
+// Export Functions
+// ============================================
+
+/** Escape a value for CSV (handle commas, quotes, newlines) */
+function escapeCsvValue(value: string | number | boolean | null | undefined): string {
+  if (value === null || value === undefined) return '';
+  const str = String(value);
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+/** Generate CSV export content from conflicts */
+function generateConflictsCsv(conflicts: Conflict[], stats: ConflictStats): string {
+  const headers = [
+    'Path',
+    'Severity',
+    'Score',
+    'File Type',
+    'Type',
+    'Is Identical',
+    'Winner Mod',
+    'Winner Mod ID',
+    'Loser Mods',
+    'Loser Mod IDs',
+    'Matched Rules',
+    'Message',
+  ];
+
+  const rows = conflicts.map((c) => [
+    escapeCsvValue(c.path),
+    escapeCsvValue(c.severity),
+    escapeCsvValue(c.score),
+    escapeCsvValue(c.fileType),
+    escapeCsvValue(c.type),
+    escapeCsvValue(c.isIdentical),
+    escapeCsvValue(c.winner?.modName ?? ''),
+    escapeCsvValue(c.winner?.modId ?? ''),
+    escapeCsvValue(c.losers.map((l) => l.modName).join('; ')),
+    escapeCsvValue(c.losers.map((l) => l.modId).join('; ')),
+    escapeCsvValue(c.matchedRules?.join('; ') ?? ''),
+    escapeCsvValue(c.message),
+  ]);
+
+  // Add summary header
+  const summary = [
+    `# Conflict Report Summary`,
+    `# Total Conflicts: ${stats.totalConflicts}`,
+    `# Critical: ${stats.criticalCount}, High: ${stats.highCount}, Medium: ${stats.mediumCount}, Low: ${stats.lowCount}`,
+    `# Generated: ${new Date().toISOString()}`,
+    '',
+  ];
+
+  return summary.join('\n') + headers.join(',') + '\n' + rows.map((r) => r.join(',')).join('\n');
+}
+
+/** Generate JSON export content from conflict analysis */
+function generateConflictsJson(
+  conflicts: Conflict[],
+  stats: ConflictStats,
+  modSummaries: ModConflictSummary[],
+  collectionSlug: string
+): object {
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    collection: collectionSlug,
+    summary: {
+      totalConflicts: stats.totalConflicts,
+      criticalCount: stats.criticalCount,
+      highCount: stats.highCount,
+      mediumCount: stats.mediumCount,
+      lowCount: stats.lowCount,
+      infoCount: stats.infoCount,
+      identicalConflicts: stats.identicalConflicts,
+      modsWithConflicts: stats.modsWithConflicts,
+    },
+    modSummaries: modSummaries.map((m) => ({
+      modId: m.modId,
+      modName: m.modName,
+      totalConflicts: m.totalConflicts,
+      winCount: m.winCount,
+      loseCount: m.loseCount,
+      criticalCount: m.criticalCount,
+    })),
+    conflicts: conflicts.map((c) => ({
+      path: c.path,
+      severity: c.severity,
+      score: c.score,
+      fileType: c.fileType,
+      type: c.type,
+      isIdentical: c.isIdentical,
+      winner: c.winner
+        ? { modId: c.winner.modId, modName: c.winner.modName, size: c.winner.size }
+        : null,
+      losers: c.losers.map((l) => ({ modId: l.modId, modName: l.modName, size: l.size })),
+      matchedRules: c.matchedRules ?? [],
+      message: c.message,
+    })),
+  };
+}
+
+/** Download text content as a file */
+function downloadText(content: string, filename: string, mimeType: string): void {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// ============================================
+// Export Toolbar Component
+// ============================================
+
+interface ExportToolbarProps {
+  conflicts: Conflict[];
+  stats: ConflictStats;
+  modSummaries: ModConflictSummary[];
+  collectionSlug: string;
+}
+
+const ExportToolbar: React.FC<ExportToolbarProps> = ({
+  conflicts,
+  stats,
+  modSummaries,
+  collectionSlug,
+}) => {
+  const timestamp = new Date().toISOString().split('T')[0];
+  const baseFilename = `conflicts-${collectionSlug}-${timestamp}`;
+
+  const handleExportCsv = () => {
+    const csv = generateConflictsCsv(conflicts, stats);
+    downloadText(csv, `${baseFilename}.csv`, 'text/csv;charset=utf-8');
+  };
+
+  const handleExportJson = () => {
+    const json = generateConflictsJson(conflicts, stats, modSummaries, collectionSlug);
+    downloadText(JSON.stringify(json, null, 2), `${baseFilename}.json`, 'application/json');
+  };
+
+  return (
+    <div className="flex gap-2">
+      <button
+        onClick={handleExportCsv}
+        className="min-h-9 px-3 py-1.5 rounded-sm text-sm
+          bg-bg-secondary border border-border
+          text-text-secondary
+          hover:bg-bg-hover hover:text-text-primary
+          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+          transition-colors motion-reduce:transition-none"
+        aria-label="Export conflicts to CSV file"
+      >
+        Export CSV
+      </button>
+      <button
+        onClick={handleExportJson}
+        className="min-h-9 px-3 py-1.5 rounded-sm text-sm
+          bg-bg-secondary border border-border
+          text-text-secondary
+          hover:bg-bg-hover hover:text-text-primary
+          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+          transition-colors motion-reduce:transition-none"
+        aria-label="Export conflicts to JSON file"
+      >
+        Export JSON
+      </button>
+    </div>
+  );
+};
 
 // ============================================
 // Loading Skeleton
@@ -264,19 +442,22 @@ const NoResultsState: React.FC<{ onClear: () => void }> = ({ onClear }) => (
 // Stats Header Component
 // ============================================
 
-const ConflictHeader: React.FC<ConflictHeaderProps> = ({ stats, cached }) => (
+const ConflictHeader: React.FC<ConflictHeaderProps> = ({ stats, cached, exportToolbar }) => (
   <header className="p-6 rounded-sm bg-bg-card border border-border">
     <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
       <h2 className="text-xl font-bold text-text-primary">Conflict Analysis</h2>
-      <span
-        className={`px-3 py-1 rounded-full text-xs font-medium ${
-          cached
-            ? 'bg-accent/20 text-accent'
-            : 'bg-text-muted/20 text-text-secondary'
-        }`}
-      >
-        {cached ? 'Cached' : 'Fresh'}
-      </span>
+      <div className="flex items-center gap-3 flex-wrap">
+        {exportToolbar}
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-medium ${
+            cached
+              ? 'bg-accent/20 text-accent'
+              : 'bg-text-muted/20 text-text-secondary'
+          }`}
+        >
+          {cached ? 'Cached' : 'Fresh'}
+        </span>
+      </div>
     </div>
     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
       <StatItem label="Total Conflicts" value={stats.totalConflicts} />
@@ -819,8 +1000,19 @@ export const ConflictView: React.FC<ConflictViewProps> = ({ slug, revision }) =>
         Conflict analysis complete. {data.stats.totalConflicts} conflicts found.
       </div>
 
-      {/* Stats header */}
-      <ConflictHeader stats={data.stats} cached={data.cached} />
+      {/* Stats header with export */}
+      <ConflictHeader
+        stats={data.stats}
+        cached={data.cached}
+        exportToolbar={
+          <ExportToolbar
+            conflicts={data.conflicts}
+            stats={data.stats}
+            modSummaries={data.modSummaries}
+            collectionSlug={slug}
+          />
+        }
+      />
 
       {/* Filters */}
       <ConflictFilters

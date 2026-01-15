@@ -418,9 +418,11 @@
 
 ### Conflict Enhancements
 
-- [ ] **US-048**: Export conflict report
-  - Export to CSV/JSON format
-  - Include all conflict details
+- [x] **US-048**: Export conflict report
+  - Export to CSV format (with summary header, detailed columns)
+  - Export to JSON format (versioned schema with summaries and full conflict data)
+  - ExportToolbar component in ConflictView header
+  - Filenames include collection slug and timestamp
   - Priority: 48
 
 - [ ] **US-049**: Conflict graph visualization

@@ -2,9 +2,9 @@
 
 ## Session Overview
 - **Date**: 2026-01-15
-- **Iterations Completed**: 3 user stories
+- **Iterations Completed**: 5 user stories
 - **Mode**: Implementation mode
-- **Tags Created**: v0.0.3, v0.0.4, v0.0.5
+- **Tags Created**: v0.0.3, v0.0.4, v0.0.5, v0.0.6, v0.0.7
 
 ## What Was Implemented
 
@@ -30,6 +30,18 @@
 - **Accessibility**: Uses `role="alert"` for screen reader announcement
 - **UX**: Shows remaining slots, actionable advice, and explains ESL exemption
 
+### US-043: Export load order (v0.0.6)
+- **Frontend**: Added `ExportToolbar` component to LoadOrderView
+- **plugins.txt**: Export with asterisk prefix for enabled plugins (standard MO2/Vortex format)
+- **loadorder.txt**: Export with plain filenames (alternative format)
+- **UX**: Filenames include collection name and timestamp for organization
+
+### US-048: Export conflict report (v0.0.7)
+- **Frontend**: Added `ExportToolbar` component to ConflictView header
+- **CSV export**: Summary header with statistics, detailed columns for all conflict fields
+- **JSON export**: Versioned schema (version: 1) with summary, mod summaries, and full conflict data
+- **UX**: Filenames include collection slug and date for organization
+
 ## Key Decisions
 
 1. **Games endpoint**: Chose to return games in a fixed order (skyrim, stardew, cyberpunk) for consistent UI display rather than alphabetical
@@ -45,9 +57,9 @@
 From IMPLEMENTATION_PLAN.md Phase 5:
 1. **US-037**: FOMOD comparison mode - Compare two selections side-by-side
 2. **US-039**: FOMOD dependency graph visualization
-3. **US-043**: Export load order (plugins.txt format)
-4. **US-044**: Load order comparison mode
-5. **US-048**: Export conflict report (CSV/JSON)
+3. **US-044**: Load order comparison mode
+4. **US-040**: FOMOD search functionality
+5. **US-049**: Conflict graph visualization
 
 ## Learnings
 
@@ -64,7 +76,8 @@ Modified:
 - mod-troubleshooter/backend/cmd/server/main.go (games endpoint registration)
 - mod-troubleshooter/backend/internal/handlers/game.go (GameHandler)
 - mod-troubleshooter/frontend/src/features/fomod/FomodViewer.tsx (export/import)
-- mod-troubleshooter/frontend/src/features/loadorder/LoadOrderView.tsx (slot warning)
+- mod-troubleshooter/frontend/src/features/loadorder/LoadOrderView.tsx (slot warning, export toolbar)
+- mod-troubleshooter/frontend/src/features/conflicts/ConflictView.tsx (export toolbar)
 - mod-troubleshooter/frontend/src/hooks/index.ts (useGames export)
 - mod-troubleshooter/frontend/src/services/index.ts (gamesService export)
 - mod-troubleshooter/frontend/src/types/api.ts (SupportedGame schema)
