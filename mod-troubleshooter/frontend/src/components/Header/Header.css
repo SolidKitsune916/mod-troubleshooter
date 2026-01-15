@@ -68,6 +68,12 @@
   border-color: var(--color-accent);
 }
 
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
 .game-selector {
   display: flex;
   align-items: center;

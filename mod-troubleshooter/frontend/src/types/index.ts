@@ -113,6 +113,8 @@ export type {
   ModConflictSummary,
   ConflictAnalysisResult,
   ConflictAnalyzeResponse,
+  // Quota types
+  Quota,
 } from './api.ts';
 
 export {
@@ -173,4 +175,6 @@ export {
   ModConflictSummarySchema,
   ConflictAnalysisResultSchema,
   ConflictAnalyzeResponseSchema,
+  // Quota schema
+  QuotaSchema,
 } from './api.ts';

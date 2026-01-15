@@ -359,10 +359,11 @@
 
 ### Backend Improvements
 
-- [ ] **US-035**: Implement rate limiting with exponential backoff
+- [x] **US-035**: Implement rate limiting with exponential backoff
   - Track Nexus API quota via response headers
   - Automatic backoff when quota low
-  - User-friendly quota display in UI
+  - User-friendly quota display in UI (QuotaIndicator component)
+  - Added GET /api/quota endpoint
   - Priority: 35
 
 - [ ] **US-036**: Add games endpoint for dynamic game support

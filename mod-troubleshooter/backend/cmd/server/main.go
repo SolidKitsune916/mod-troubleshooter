@@ -92,6 +92,10 @@ func main() {
 	mux.HandleFunc("POST /api/settings", settingsHandler.UpdateSettings)
 	mux.HandleFunc("POST /api/settings/validate", settingsHandler.ValidateAPIKey)
 
+	// Quota endpoint to expose rate limit info
+	quotaHandler := handlers.NewQuotaHandler(clientMgr)
+	mux.HandleFunc("GET /api/quota", quotaHandler.GetQuota)
+
 	// Collection endpoints with dynamic client lookup
 	collectionHandler := handlers.NewDynamicCollectionHandler(clientMgr)
 	mux.HandleFunc("GET /api/collections/{slug}", collectionHandler.GetCollection)

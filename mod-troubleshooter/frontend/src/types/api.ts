@@ -519,3 +519,19 @@ export type ConflictStats = z.infer<typeof ConflictStatsSchema>;
 export type ModConflictSummary = z.infer<typeof ModConflictSummarySchema>;
 export type ConflictAnalysisResult = z.infer<typeof ConflictAnalysisResultSchema>;
 export type ConflictAnalyzeResponse = z.infer<typeof ConflictAnalyzeResponseSchema>;
+
+// ============================================
+// Quota Types
+// ============================================
+
+/** Nexus API quota information */
+export const QuotaSchema = z.object({
+  hourlyLimit: z.number(),
+  hourlyRemaining: z.number(),
+  dailyLimit: z.number(),
+  dailyRemaining: z.number(),
+  available: z.boolean(),
+});
+
+/** Quota type export */
+export type Quota = z.infer<typeof QuotaSchema>;

@@ -1,6 +1,7 @@
 import './Header.css';
 import type { GameId } from '@/types';
 import { GAMES } from '@/types';
+import { QuotaIndicator } from '@components/QuotaIndicator/index.ts';
 
 interface HeaderProps {
   collectionCount?: number;
@@ -39,18 +40,21 @@ export function Header({
           <h1>Mod Troubleshooter</h1>
         </div>
       </div>
-      <div className="game-selector">
-        <select
-          value={currentGame}
-          onChange={(e) => onGameChange(e.target.value as GameId)}
-          aria-label="Select game"
-        >
-          {GAMES.map((game) => (
-            <option key={game.id} value={game.id}>
-              {game.label}
-            </option>
-          ))}
-        </select>
+      <div className="header-center">
+        <div className="game-selector">
+          <select
+            value={currentGame}
+            onChange={(e) => onGameChange(e.target.value as GameId)}
+            aria-label="Select game"
+          >
+            {GAMES.map((game) => (
+              <option key={game.id} value={game.id}>
+                {game.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <QuotaIndicator />
       </div>
       {(collectionCount !== undefined || totalMods !== undefined) && (
         <div className="header-info">

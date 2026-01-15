@@ -13,3 +13,4 @@ export {
   analyzeCollectionConflicts,
   analyzeConflicts,
 } from './conflictService.ts';
+export { fetchQuota } from './quotaService.ts';
