@@ -2,11 +2,18 @@
 
 ## Session Overview
 - **Date**: 2026-01-15
-- **Iterations Completed**: 13 user stories
+- **Iterations Completed**: 13 user stories (Phase 5 complete)
 - **Mode**: Implementation mode
-- **Tags Created**: v0.0.3, v0.0.4, v0.0.5, v0.0.6, v0.0.7, v0.0.8, v0.0.9, v0.0.10, v0.0.11, v0.0.12, v0.0.13, v0.0.14, v0.0.15
+- **Tags Created**: v0.0.3, v0.0.4, v0.0.5, v0.0.6, v0.0.7, v0.0.8, v0.0.9, v0.0.10, v0.0.11, v0.0.12, v0.0.13, v0.0.14, v0.0.15, v0.0.16
 
 ## What Was Implemented
+
+### Additional Improvements (v0.0.16)
+- **Fix**: Resolved ESLint error in `useViewerCollections.ts` by refactoring setState pattern
+- **Enhancement**: Added loading spinner to CollectionSearch button (was showing "Loading..." text)
+- **Accessibility**: Added focus-visible styling to search clear button, sidebar toggle, selection buttons
+- **Accessibility**: Added focus-visible styling to category pills, collection checkboxes
+- **WCAG AA**: Increased category pill min-height from 32px to 44px for touch target compliance
 
 ### US-060: Full keyboard navigation audit (v0.0.15)
 - **Audit**: Comprehensive audit of all React components for keyboard navigation compliance
@@ -133,11 +140,21 @@
 
 ## Discovered Issues
 
-- **useViewerCollections.ts:37**: ESLint error about calling setState synchronously within an effect, violates React Compiler rules. Added to IMPLEMENTATION_PLAN.md for future resolution.
+_All discovered issues have been resolved._
+
+- ~~**useViewerCollections.ts:37**: ESLint error about calling setState synchronously within an effect~~ - **RESOLVED** in v0.0.16 by refactoring to use status-based loading state pattern
 
 ## Remaining Work (Next Priority)
 
-All user stories from IMPLEMENTATION_PLAN.md have been completed!
+**All Phase 5 user stories from IMPLEMENTATION_PLAN.md have been completed!**
+
+Future considerations for Phase 6 (Performance/Polish):
+- LOOT integration for load order suggestions
+- Tauri wrapper for local Vortex/MO2 access
+- Plugin record-level conflict detection
+- Automated conflict resolution suggestions
+- Mod comparison tool
+- Collection export/import
 
 ## Learnings
 
@@ -159,10 +176,15 @@ Modified:
 - mod-troubleshooter/frontend/src/features/loadorder/index.ts (exports)
 - mod-troubleshooter/frontend/src/features/conflicts/ConflictView.tsx (graph mode)
 - mod-troubleshooter/frontend/src/features/conflicts/index.ts (exports)
+- mod-troubleshooter/frontend/src/features/collections/CollectionSearch.tsx (loading spinner)
+- mod-troubleshooter/frontend/src/features/collections/CollectionSearch.module.css (spinner styles)
 - mod-troubleshooter/frontend/src/App.tsx (keyboard shortcuts integration)
 - mod-troubleshooter/frontend/src/hooks/index.ts (exports)
+- mod-troubleshooter/frontend/src/hooks/useViewerCollections.ts (refactored loading state)
 - mod-troubleshooter/frontend/src/components/SearchBar/SearchBar.tsx (data attribute)
+- mod-troubleshooter/frontend/src/components/SearchBar/SearchBar.css (focus-visible styling)
 - mod-troubleshooter/frontend/src/components/Sidebar/Sidebar.tsx (Escape key for mobile close)
+- mod-troubleshooter/frontend/src/components/Sidebar/Sidebar.css (focus-visible styling, 44px touch targets)
 - mod-troubleshooter/frontend/vite.config.ts (Vitest config)
 - mod-troubleshooter/frontend/package.json (test dependencies)
 - mod-troubleshooter/IMPLEMENTATION_PLAN.md (status updates)

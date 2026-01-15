@@ -1,0 +1,11 @@
+---
+[2026-01-15] Session - Phase 5 Complete
+- Pattern: React Compiler ESLint rules require careful setState handling - avoid synchronous setState inside useEffect bodies
+- Pattern: Use status-based loading state pattern (idle/loading/success/error) instead of separate boolean states
+- Pattern: Category pills and other interactive elements need 44px min-height for WCAG AA touch target compliance
+- Gotcha: Focus-visible styling must be explicitly added to custom buttons - native elements have browser defaults but custom styled buttons need explicit :focus-visible rules
+- Gotcha: The :focus-visible selector is better than :focus for keyboard navigation as it only shows focus rings for keyboard users, not mouse clicks
+- Tip: When using React Flow for graph visualizations, add keyboard navigation support manually (arrow keys for expand/collapse)
+- Tip: All skeleton components should have role="status" and aria-busy="true" for screen reader accessibility
+- Tip: Spinner animations should respect prefers-reduced-motion media query with animation: none fallback
+---
