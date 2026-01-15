@@ -379,9 +379,10 @@
   - Highlight differences in selections
   - Priority: 37
 
-- [ ] **US-038**: Add FOMOD export/import
-  - Export selections to JSON
-  - Import selections from file
+- [x] **US-038**: Add FOMOD export/import
+  - Export selections to JSON file with version, metadata, and selections
+  - Import selections from JSON file with validation and mod mismatch warning
+  - SelectionsToolbar component with Export/Import buttons
   - Priority: 38
 
 - [ ] **US-039**: Add FOMOD dependency graph visualization

@@ -1131,6 +1131,190 @@ const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ viewMode, onViewModeCha
 };
 
 // ============================================
+// Export/Import Types and Functions
+// ============================================
+
+/** Exported FOMOD selections format */
+interface ExportedSelections {
+  version: 1;
+  modId: number;
+  fileId: number;
+  game: string;
+  exportedAt: string;
+  selections: Record<string, string[]>;
+}
+
+/**
+ * Serialize selections to JSON format for export.
+ */
+function serializeSelections(
+  selections: Map<string, Set<string>>,
+  game: string,
+  modId: number,
+  fileId: number,
+): ExportedSelections {
+  const selectionsObj: Record<string, string[]> = {};
+  for (const [key, value] of selections.entries()) {
+    if (value.size > 0) {
+      selectionsObj[key] = Array.from(value);
+    }
+  }
+  return {
+    version: 1,
+    modId,
+    fileId,
+    game,
+    exportedAt: new Date().toISOString(),
+    selections: selectionsObj,
+  };
+}
+
+/**
+ * Deserialize selections from JSON format.
+ */
+function deserializeSelections(
+  data: ExportedSelections,
+): Map<string, Set<string>> {
+  const map = new Map<string, Set<string>>();
+  for (const [key, values] of Object.entries(data.selections)) {
+    map.set(key, new Set(values));
+  }
+  return map;
+}
+
+/**
+ * Download data as a JSON file.
+ */
+function downloadJson(data: object, filename: string): void {
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ============================================
+// Export/Import Toolbar Component
+// ============================================
+
+interface SelectionsToolbarProps {
+  selections: Map<string, Set<string>>;
+  game: string;
+  modId: number;
+  fileId: number;
+  modName: string;
+  onImport: (selections: Map<string, Set<string>>) => void;
+}
+
+const SelectionsToolbar: React.FC<SelectionsToolbarProps> = ({
+  selections,
+  game,
+  modId,
+  fileId,
+  modName,
+  onImport,
+}) => {
+  const fileInputId = useId();
+  const hasSelections = Array.from(selections.values()).some((s) => s.size > 0);
+
+  const handleExport = useCallback(() => {
+    const exported = serializeSelections(selections, game, modId, fileId);
+    const safeName = modName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    downloadJson(exported, `fomod-selections-${safeName}.json`);
+  }, [selections, game, modId, fileId, modName]);
+
+  const handleImportClick = useCallback(() => {
+    const input = document.getElementById(fileInputId) as HTMLInputElement;
+    input?.click();
+  }, [fileInputId]);
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = JSON.parse(event.target?.result as string) as ExportedSelections;
+          if (data.version !== 1) {
+            alert('Unsupported selection file version');
+            return;
+          }
+          if (data.modId !== modId || data.fileId !== fileId) {
+            const confirmImport = confirm(
+              'This selection file was exported from a different mod. Import anyway?'
+            );
+            if (!confirmImport) return;
+          }
+          const imported = deserializeSelections(data);
+          onImport(imported);
+        } catch {
+          alert('Failed to parse selection file. Please check the file format.');
+        }
+      };
+      reader.readAsText(file);
+
+      // Reset input so same file can be selected again
+      e.target.value = '';
+    },
+    [modId, fileId, onImport],
+  );
+
+  return (
+    <div className="flex items-center gap-3">
+      <input
+        id={fileInputId}
+        type="file"
+        accept=".json"
+        onChange={handleFileChange}
+        className="sr-only"
+        aria-label="Import selections file"
+      />
+      <button
+        onClick={handleExport}
+        disabled={!hasSelections}
+        className={`
+          min-h-9 px-4 py-1.5 rounded-sm font-medium text-sm
+          flex items-center gap-2
+          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+          transition-colors motion-reduce:transition-none
+          ${
+            hasSelections
+              ? 'bg-bg-secondary text-text-secondary hover:bg-bg-secondary/80 hover:text-text-primary'
+              : 'bg-bg-secondary/50 text-text-muted cursor-not-allowed'
+          }
+        `}
+        title={hasSelections ? 'Export current selections to JSON' : 'No selections to export'}
+      >
+        <span aria-hidden="true">📤</span>
+        Export
+      </button>
+      <button
+        onClick={handleImportClick}
+        className="
+          min-h-9 px-4 py-1.5 rounded-sm font-medium text-sm
+          flex items-center gap-2
+          bg-bg-secondary text-text-secondary
+          hover:bg-bg-secondary/80 hover:text-text-primary
+          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+          transition-colors motion-reduce:transition-none
+        "
+        title="Import selections from JSON file"
+      >
+        <span aria-hidden="true">📥</span>
+        Import
+      </button>
+    </div>
+  );
+};
+
+// ============================================
 // Main FomodViewer Component
 // ============================================
 
@@ -1196,6 +1380,11 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
 
   const handleStepChange = useCallback((index: number) => {
     setCurrentStepIndex(index);
+  }, []);
+
+  const handleImportSelections = useCallback((imported: Map<string, Set<string>>) => {
+    setSelections(imported);
+    setCurrentStepIndex(0);
   }, []);
 
   // Auto-navigate to next visible step if current step becomes hidden
@@ -1292,7 +1481,18 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
                 </div>
               )}
 
-              <FomodSummary steps={steps} selections={selections} />
+              {/* Selection summary with export/import */}
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <FomodSummary steps={steps} selections={selections} />
+                <SelectionsToolbar
+                  selections={selections}
+                  game={game}
+                  modId={modId}
+                  fileId={fileId}
+                  modName={data.data.info?.name ?? data.data.config.moduleName ?? 'fomod'}
+                  onImport={handleImportSelections}
+                />
+              </div>
 
               <FilePreviewPanel
                 config={data.data.config}
