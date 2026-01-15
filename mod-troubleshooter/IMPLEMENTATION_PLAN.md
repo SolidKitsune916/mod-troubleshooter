@@ -440,9 +440,14 @@
   - Filenames include collection slug and timestamp
   - Priority: 48
 
-- [ ] **US-049**: Conflict graph visualization
-  - Show mod relationships as graph
-  - Highlight problematic dependencies
+- [x] **US-049**: Conflict graph visualization
+  - ConflictGraphView component using React Flow
+  - Shows mods as nodes with win/lose ratio coloring
+  - Edges between conflicting mods with severity-based colors
+  - Node highlighting on selection with connected nodes
+  - Animated edges for critical/high severity conflicts
+  - Legend showing node and edge color meanings
+  - View mode toggle in ConflictView (List, Graph)
   - Priority: 49
 
 ### UI/UX Improvements

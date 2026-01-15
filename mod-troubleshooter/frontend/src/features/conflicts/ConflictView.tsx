@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 
 import { useConflictAnalysis } from '@hooks/useConflicts.ts';
 import { ApiError } from '@services/api.ts';
+import { ConflictGraphView } from './ConflictGraphView.tsx';
 
 import type {
   Conflict,
@@ -10,6 +11,9 @@ import type {
   FileType,
   ModConflictSummary,
 } from '@/types/index.ts';
+
+/** View mode for the conflict display */
+type ViewMode = 'list' | 'graph';
 
 // ============================================
 // Props Interfaces
@@ -24,6 +28,8 @@ interface ConflictHeaderProps {
   stats: ConflictStats;
   cached: boolean;
   exportToolbar?: React.ReactNode;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
 interface ConflictFiltersProps {
@@ -439,14 +445,60 @@ const NoResultsState: React.FC<{ onClear: () => void }> = ({ onClear }) => (
 );
 
 // ============================================
+// View Mode Toggle Component
+// ============================================
+
+interface ViewModeToggleProps {
+  viewMode: ViewMode;
+  onChange: (mode: ViewMode) => void;
+}
+
+const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ viewMode, onChange }) => {
+  const modes: { value: ViewMode; label: string; icon: string }[] = [
+    { value: 'list', label: 'List', icon: '📋' },
+    { value: 'graph', label: 'Graph', icon: '🕸️' },
+  ];
+
+  return (
+    <div
+      className="flex rounded-sm overflow-hidden border border-border"
+      role="radiogroup"
+      aria-label="View mode"
+    >
+      {modes.map((mode) => (
+        <button
+          key={mode.value}
+          onClick={() => onChange(mode.value)}
+          className={`
+            min-h-9 px-4 py-2 text-sm font-medium flex items-center gap-1.5
+            transition-colors motion-reduce:transition-none
+            focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-[-2px]
+            ${viewMode === mode.value
+              ? 'bg-accent text-white'
+              : 'bg-bg-secondary text-text-secondary hover:bg-bg-hover'
+            }
+          `}
+          role="radio"
+          aria-checked={viewMode === mode.value}
+        >
+          <span aria-hidden="true">{mode.icon}</span>
+          {mode.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+// ============================================
 // Stats Header Component
 // ============================================
 
-const ConflictHeader: React.FC<ConflictHeaderProps> = ({ stats, cached, exportToolbar }) => (
+const ConflictHeader: React.FC<ConflictHeaderProps> = ({ stats, cached, exportToolbar, viewMode, onViewModeChange }) => (
   <header className="p-6 rounded-sm bg-bg-card border border-border">
     <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
       <h2 className="text-xl font-bold text-text-primary">Conflict Analysis</h2>
       <div className="flex items-center gap-3 flex-wrap">
+        <ViewModeToggle viewMode={viewMode} onChange={onViewModeChange} />
         {exportToolbar}
         <span
           className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -905,6 +957,7 @@ const SummaryPanel: React.FC<SummaryPanelProps> = ({ modSummaries, onSelectMod }
 export const ConflictView: React.FC<ConflictViewProps> = ({ slug, revision }) => {
   const { data, isLoading, error, refetch } = useConflictAnalysis(slug, revision);
   const [selectedConflict, setSelectedConflict] = useState<Conflict | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   // Filter state
   const [selectedSeverity, setSelectedSeverity] = useState<ConflictSeverity | null>(null);
@@ -987,7 +1040,12 @@ export const ConflictView: React.FC<ConflictViewProps> = ({ slug, revision }) =>
         <div aria-live="polite" className="sr-only">
           Conflict analysis complete. No conflicts found.
         </div>
-        <ConflictHeader stats={data.stats} cached={data.cached} />
+        <ConflictHeader
+          stats={data.stats}
+          cached={data.cached}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
         <EmptyState />
       </div>
     );
@@ -1004,6 +1062,8 @@ export const ConflictView: React.FC<ConflictViewProps> = ({ slug, revision }) =>
       <ConflictHeader
         stats={data.stats}
         cached={data.cached}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
         exportToolbar={
           <ExportToolbar
             conflicts={data.conflicts}
@@ -1014,50 +1074,65 @@ export const ConflictView: React.FC<ConflictViewProps> = ({ slug, revision }) =>
         }
       />
 
-      {/* Filters */}
-      <ConflictFilters
-        selectedSeverity={selectedSeverity}
-        selectedFileType={selectedFileType}
-        selectedMod={selectedMod}
-        searchQuery={searchQuery}
-        onSeverityChange={setSelectedSeverity}
-        onFileTypeChange={setSelectedFileType}
-        onModChange={setSelectedMod}
-        onSearchChange={setSearchQuery}
-        modSummaries={data.modSummaries}
-        stats={data.stats}
-      />
-
-      {/* No results after filtering */}
-      {filteredConflicts.length === 0 && hasActiveFilters && (
-        <NoResultsState onClear={clearFilters} />
+      {/* View mode: Graph */}
+      {viewMode === 'graph' && (
+        <ConflictGraphView
+          conflicts={data.conflicts}
+          modSummaries={data.modSummaries}
+          onSelectMod={handleSelectMod}
+          selectedModId={selectedMod}
+        />
       )}
 
-      {/* Main content grid */}
-      {filteredConflicts.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Conflict list */}
-          <div className="lg:col-span-2">
-            <ConflictList
-              conflicts={filteredConflicts}
-              selectedConflict={selectedConflict}
-              onSelectConflict={setSelectedConflict}
-            />
-          </div>
+      {/* View mode: List */}
+      {viewMode === 'list' && (
+        <>
+          {/* Filters */}
+          <ConflictFilters
+            selectedSeverity={selectedSeverity}
+            selectedFileType={selectedFileType}
+            selectedMod={selectedMod}
+            searchQuery={searchQuery}
+            onSeverityChange={setSelectedSeverity}
+            onFileTypeChange={setSelectedFileType}
+            onModChange={setSelectedMod}
+            onSearchChange={setSearchQuery}
+            modSummaries={data.modSummaries}
+            stats={data.stats}
+          />
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Conflict details or summary panel */}
-            {selectedConflict ? (
-              <ConflictDetails conflict={selectedConflict} />
-            ) : (
-              <SummaryPanel
-                modSummaries={data.modSummaries}
-                onSelectMod={handleSelectMod}
-              />
-            )}
-          </div>
-        </div>
+          {/* No results after filtering */}
+          {filteredConflicts.length === 0 && hasActiveFilters && (
+            <NoResultsState onClear={clearFilters} />
+          )}
+
+          {/* Main content grid */}
+          {filteredConflicts.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Conflict list */}
+              <div className="lg:col-span-2">
+                <ConflictList
+                  conflicts={filteredConflicts}
+                  selectedConflict={selectedConflict}
+                  onSelectConflict={setSelectedConflict}
+                />
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-6">
+                {/* Conflict details or summary panel */}
+                {selectedConflict ? (
+                  <ConflictDetails conflict={selectedConflict} />
+                ) : (
+                  <SummaryPanel
+                    modSummaries={data.modSummaries}
+                    onSelectMod={handleSelectMod}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
