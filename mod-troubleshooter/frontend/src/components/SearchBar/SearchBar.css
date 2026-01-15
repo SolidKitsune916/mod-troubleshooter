@@ -82,6 +82,13 @@
   color: var(--color-text-primary);
 }
 
+.search-clear:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+}
+
 .search-clear.visible {
   display: flex;
 }
