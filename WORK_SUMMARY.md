@@ -2,11 +2,21 @@
 
 ## Session Overview
 - **Date**: 2026-01-15
-- **Iterations Completed**: 9 user stories
+- **Iterations Completed**: 10 user stories
 - **Mode**: Implementation mode
-- **Tags Created**: v0.0.3, v0.0.4, v0.0.5, v0.0.6, v0.0.7, v0.0.8, v0.0.9, v0.0.10, v0.0.11
+- **Tags Created**: v0.0.3, v0.0.4, v0.0.5, v0.0.6, v0.0.7, v0.0.8, v0.0.9, v0.0.10, v0.0.11, v0.0.12
 
 ## What Was Implemented
+
+### US-049: Conflict graph visualization (v0.0.12)
+- **Frontend**: Added `ConflictGraphView` component using React Flow
+- **Visualization**: Interactive graph showing mod relationships through conflicts
+- **Nodes**: Color-coded by win/lose ratio (green=high wins, yellow=mixed, orange=low wins, red=critical)
+- **Edges**: Show conflict relationships with severity-based colors and animated for critical/high
+- **Interaction**: Click nodes to filter conflicts by mod, connected nodes highlighted
+- **Legend**: Shows node colors (win rate) and edge colors (severity)
+- **Stats**: Overlay showing mod count and conflict relationship count
+- **Integration**: Second view mode in ConflictView (List, Graph)
 
 ### US-044: Load order comparison mode (v0.0.11)
 - **Frontend**: Added `LoadOrderComparisonView` component for side-by-side load order snapshots
@@ -100,10 +110,9 @@
 ## Remaining Work (Next Priority)
 
 From IMPLEMENTATION_PLAN.md Phase 5:
-1. **US-049**: Conflict graph visualization
-2. **US-055**: Keyboard shortcuts
-3. **US-056**: Loading skeletons everywhere
-4. **US-060**: Full keyboard navigation audit
+1. **US-055**: Keyboard shortcuts
+2. **US-056**: Loading skeletons everywhere
+3. **US-060**: Full keyboard navigation audit
 
 ## Learnings
 
@@ -123,6 +132,8 @@ Modified:
 - mod-troubleshooter/frontend/src/features/fomod/index.ts (exports)
 - mod-troubleshooter/frontend/src/features/loadorder/LoadOrderView.tsx (comparison mode)
 - mod-troubleshooter/frontend/src/features/loadorder/index.ts (exports)
+- mod-troubleshooter/frontend/src/features/conflicts/ConflictView.tsx (graph mode)
+- mod-troubleshooter/frontend/src/features/conflicts/index.ts (exports)
 - mod-troubleshooter/frontend/vite.config.ts (Vitest config)
 - mod-troubleshooter/frontend/package.json (test dependencies)
 - mod-troubleshooter/IMPLEMENTATION_PLAN.md (status updates)
@@ -134,5 +145,6 @@ Created:
 - mod-troubleshooter/frontend/src/features/fomod/fomodUtils.test.ts
 - mod-troubleshooter/frontend/src/features/loadorder/LoadOrderComparisonView.tsx
 - mod-troubleshooter/frontend/src/features/loadorder/loadorderUtils.test.ts
+- mod-troubleshooter/frontend/src/features/conflicts/ConflictGraphView.tsx
 - mod-troubleshooter/frontend/src/test/setup.ts
 ```
