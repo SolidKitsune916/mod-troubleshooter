@@ -3,6 +3,13 @@ import { useState, useCallback, useMemo, useId } from 'react';
 import { useFomodAnalysis } from '@hooks/useFomod.ts';
 import { ApiError } from '@services/api.ts';
 import { FomodTreeView } from './FomodTreeView.tsx';
+import { FomodComparisonView } from './FomodComparisonView.tsx';
+import type { ConfigSnapshot } from './FomodComparisonView.tsx';
+import {
+  collectInstallFiles as collectFilesForSnapshot,
+  collectFlags as collectFlagsForSnapshot,
+} from './fomodUtils.ts';
+import type { SelectionsMap } from './fomodUtils.ts';
 
 import type {
   Dependency,
@@ -20,7 +27,7 @@ import type {
 // View Mode Types
 // ============================================
 
-type ViewMode = 'wizard' | 'tree';
+type ViewMode = 'wizard' | 'tree' | 'comparison';
 
 // ============================================
 // Condition Flag Types and Helpers
@@ -1346,6 +1353,12 @@ interface ViewModeToggleProps {
 const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ viewMode, onViewModeChange }) => {
   const groupId = useId();
 
+  const modes: { value: ViewMode; icon: string; label: string }[] = [
+    { value: 'wizard', icon: '📋', label: 'Wizard' },
+    { value: 'tree', icon: '🌳', label: 'Tree View' },
+    { value: 'comparison', icon: '⚖️', label: 'Compare' },
+  ];
+
   return (
     <div
       role="group"
@@ -1355,44 +1368,28 @@ const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ viewMode, onViewModeCha
       <span id={groupId} className="sr-only">
         View mode
       </span>
-      <button
-        onClick={() => onViewModeChange('wizard')}
-        aria-pressed={viewMode === 'wizard'}
-        className={`
-          min-h-9 px-4 py-1.5 rounded-xs font-medium text-sm
-          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-          transition-colors motion-reduce:transition-none
-          ${
-            viewMode === 'wizard'
-              ? 'bg-accent text-white'
-              : 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-secondary/80'
-          }
-        `}
-      >
-        <span aria-hidden="true" className="mr-2">
-          📋
-        </span>
-        Wizard
-      </button>
-      <button
-        onClick={() => onViewModeChange('tree')}
-        aria-pressed={viewMode === 'tree'}
-        className={`
-          min-h-9 px-4 py-1.5 rounded-xs font-medium text-sm
-          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
-          transition-colors motion-reduce:transition-none
-          ${
-            viewMode === 'tree'
-              ? 'bg-accent text-white'
-              : 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-secondary/80'
-          }
-        `}
-      >
-        <span aria-hidden="true" className="mr-2">
-          🌳
-        </span>
-        Tree View
-      </button>
+      {modes.map((mode) => (
+        <button
+          key={mode.value}
+          onClick={() => onViewModeChange(mode.value)}
+          aria-pressed={viewMode === mode.value}
+          className={`
+            min-h-9 px-4 py-1.5 rounded-xs font-medium text-sm
+            focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+            transition-colors motion-reduce:transition-none
+            ${
+              viewMode === mode.value
+                ? 'bg-accent text-white'
+                : 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-secondary/80'
+            }
+          `}
+        >
+          <span aria-hidden="true" className="mr-2">
+            {mode.icon}
+          </span>
+          {mode.label}
+        </button>
+      ))}
     </div>
   );
 };
@@ -1591,6 +1588,10 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
   const [selections, setSelections] = useState<Map<string, Set<string>>>(new Map());
   const [viewMode, setViewMode] = useState<ViewMode>('wizard');
 
+  // Comparison mode state
+  const [configA, setConfigA] = useState<ConfigSnapshot | null>(null);
+  const [configB, setConfigB] = useState<ConfigSnapshot | null>(null);
+
   const { data, isLoading, error, refetch } = useFomodAnalysis(game, modId, fileId);
 
   const handleViewModeChange = useCallback((mode: ViewMode) => {
@@ -1654,6 +1655,45 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
     setCurrentStepIndex(0);
   }, []);
 
+  // Comparison mode handlers
+  const handleSaveConfigA = useCallback(() => {
+    const fomodData = data?.data;
+    if (!fomodData) return;
+    const snapshotFlags = collectFlagsForSnapshot(steps, selections);
+    const files = collectFilesForSnapshot(fomodData.config, steps, selections, snapshotFlags);
+    setConfigA({
+      id: 'config-a',
+      label: 'Configuration A',
+      selections: new Map(selections),
+      files,
+      savedAt: new Date(),
+    });
+  }, [data, steps, selections]);
+
+  const handleSaveConfigB = useCallback(() => {
+    const fomodData = data?.data;
+    if (!fomodData) return;
+    const snapshotFlags = collectFlagsForSnapshot(steps, selections);
+    const files = collectFilesForSnapshot(fomodData.config, steps, selections, snapshotFlags);
+    setConfigB({
+      id: 'config-b',
+      label: 'Configuration B',
+      selections: new Map(selections),
+      files,
+      savedAt: new Date(),
+    });
+  }, [data, steps, selections]);
+
+  const handleLoadComparisonConfig = useCallback((loadedSelections: SelectionsMap) => {
+    // Deep copy the selections
+    const newSelections = new Map<string, Set<string>>();
+    for (const [key, value] of loadedSelections) {
+      newSelections.set(key, new Set(value));
+    }
+    setSelections(newSelections);
+    setCurrentStepIndex(0);
+  }, []);
+
   // Auto-navigate to next visible step if current step becomes hidden
   const currentStepVisible = stepVisibility[currentStepIndex];
   const adjustedStepIndex = useMemo(() => {
@@ -1708,17 +1748,32 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
       <FomodHeader data={data.data} cached={data.cached} />
 
       {/* View mode toggle */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-text-muted text-sm">
-          {viewMode === 'wizard'
-            ? 'Interactive wizard view - make selections step by step'
-            : 'Tree view - browse the full FOMOD structure'}
+          {viewMode === 'wizard' && 'Interactive wizard view - make selections step by step'}
+          {viewMode === 'tree' && 'Tree view - browse the full FOMOD structure'}
+          {viewMode === 'comparison' && 'Compare two configurations side-by-side'}
         </p>
         <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
       </div>
 
       {/* Tree View Mode */}
       {viewMode === 'tree' && <FomodTreeView data={data.data} />}
+
+      {/* Comparison View Mode */}
+      {viewMode === 'comparison' && (
+        <FomodComparisonView
+          config={data.data.config}
+          steps={steps}
+          currentSelections={selections}
+          currentFlags={flags}
+          onSaveConfigA={handleSaveConfigA}
+          onSaveConfigB={handleSaveConfigB}
+          onLoadConfig={handleLoadComparisonConfig}
+          configA={configA}
+          configB={configB}
+        />
+      )}
 
       {/* Wizard View Mode */}
       {viewMode === 'wizard' && (

@@ -374,9 +374,14 @@
 
 ### FOMOD Enhancements
 
-- [ ] **US-037**: Implement FOMOD comparison mode
-  - Compare two FOMOD selections side-by-side
-  - Highlight differences in selections
+- [x] **US-037**: Implement FOMOD comparison mode
+  - Added FomodComparisonView component with side-by-side file diff
+  - Compare two saved configuration snapshots (Config A and Config B)
+  - Filter by diff status: A Only, B Only, Different Source, Same
+  - Save/Load configurations with visual "Current" indicator
+  - Utility functions in fomodUtils.ts for file collection and flag evaluation
+  - Vitest test suite with 14 tests covering evaluateDependency, collectFlags, collectInstallFiles
+  - Full WCAG 2.2 AA accessibility: aria-labels, keyboard navigation, screen reader support
   - Priority: 37
 
 - [x] **US-038**: Add FOMOD export/import
@@ -458,7 +463,7 @@
 
 ## Discovered Issues
 
-<!-- Document bugs and issues found during implementation -->
+- **useViewerCollections.ts:37** - ESLint error: `Calling setState synchronously within an effect can trigger cascading renders`. The `setLoading(true)` call in useEffect violates React Compiler rules. Consider restructuring to use `useSyncExternalStore` or lifting loading state into the async callback.
 
 ## Future Considerations
 
