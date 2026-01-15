@@ -770,9 +770,15 @@ const FileTreeNodeView: React.FC<FileTreeNodeViewProps> = ({ node, depth }) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         toggleExpanded();
+      } else if (e.key === 'ArrowRight' && !isExpanded && hasChildren) {
+        e.preventDefault();
+        setIsExpanded(true);
+      } else if (e.key === 'ArrowLeft' && isExpanded) {
+        e.preventDefault();
+        setIsExpanded(false);
       }
     },
-    [toggleExpanded],
+    [toggleExpanded, isExpanded, hasChildren],
   );
 
   // Get category badge color

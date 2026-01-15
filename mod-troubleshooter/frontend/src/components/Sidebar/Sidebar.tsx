@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ViewerCollection } from '@/types';
 import './Sidebar.css';
 
@@ -34,6 +34,20 @@ export function Sidebar({
   onMobileClose,
 }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Close mobile sidebar on Escape key
+  useEffect(() => {
+    if (!isMobileOpen) return;
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onMobileClose?.();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [isMobileOpen, onMobileClose]);
 
   const handleToggle = () => {
     if (window.innerWidth <= 768) {
