@@ -257,6 +257,110 @@ const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ viewMode, onChange }) =
 );
 
 // ============================================
+// Constants
+// ============================================
+
+/** Maximum number of regular plugin slots (ESM + ESP) in Skyrim SE */
+const PLUGIN_SLOT_LIMIT = 254;
+
+/** Warning threshold (percentage of limit used) */
+const SLOT_WARNING_THRESHOLD = 0.9; // 90%
+
+/** Critical threshold (percentage of limit used) */
+const SLOT_CRITICAL_THRESHOLD = 0.98; // 98%
+
+// ============================================
+// Slot Limit Warning Component
+// ============================================
+
+interface SlotLimitWarningProps {
+  esmCount: number;
+  espCount: number;
+}
+
+const SlotLimitWarning: React.FC<SlotLimitWarningProps> = ({ esmCount, espCount }) => {
+  const usedSlots = esmCount + espCount;
+  const remainingSlots = PLUGIN_SLOT_LIMIT - usedSlots;
+  const percentUsed = usedSlots / PLUGIN_SLOT_LIMIT;
+
+  // Determine severity
+  const isOverLimit = usedSlots > PLUGIN_SLOT_LIMIT;
+  const isCritical = usedSlots >= PLUGIN_SLOT_LIMIT * SLOT_CRITICAL_THRESHOLD;
+  const isWarning = usedSlots >= PLUGIN_SLOT_LIMIT * SLOT_WARNING_THRESHOLD;
+
+  // Don't show anything if under warning threshold
+  if (!isWarning && !isCritical && !isOverLimit) {
+    return null;
+  }
+
+  const severity = isOverLimit ? 'error' : isCritical ? 'error' : 'warning';
+  const bgClass = severity === 'error' ? 'bg-error/10 border-error' : 'bg-warning/10 border-warning';
+  const textClass = severity === 'error' ? 'text-error' : 'text-warning';
+  const barBgClass = severity === 'error' ? 'bg-error' : 'bg-warning';
+
+  return (
+    <div
+      role="alert"
+      className={`p-4 rounded-sm border ${bgClass}`}
+    >
+      <div className="flex items-start gap-3">
+        <span className="text-xl" aria-hidden="true">
+          {isOverLimit ? '⛔' : '⚠️'}
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className={`font-semibold ${textClass}`}>
+            {isOverLimit
+              ? 'Plugin Slot Limit Exceeded!'
+              : isCritical
+                ? 'Plugin Slot Limit Critical!'
+                : 'Approaching Plugin Slot Limit'}
+          </p>
+          <p className="text-sm text-text-secondary mt-1">
+            {isOverLimit ? (
+              <>
+                You are using <strong className="text-error">{usedSlots}</strong> regular plugin slots,
+                which exceeds the Skyrim SE limit of <strong>{PLUGIN_SLOT_LIMIT}</strong>.
+                <br />
+                <span className="text-error font-medium">
+                  Remove {usedSlots - PLUGIN_SLOT_LIMIT} plugin(s) or convert to ESL format.
+                </span>
+              </>
+            ) : (
+              <>
+                Using <strong className={textClass}>{usedSlots}</strong> of{' '}
+                <strong>{PLUGIN_SLOT_LIMIT}</strong> regular plugin slots ({remainingSlots} remaining).
+                <br />
+                <span className="text-text-muted">
+                  Consider converting some plugins to ESL format to free up slots.
+                </span>
+              </>
+            )}
+          </p>
+
+          {/* Progress bar */}
+          <div className="mt-3" aria-hidden="true">
+            <div className="h-2 bg-bg-secondary rounded-full overflow-hidden">
+              <div
+                className={`h-full ${barBgClass} transition-all motion-reduce:transition-none`}
+                style={{ width: `${Math.min(percentUsed * 100, 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-1 text-xs text-text-muted">
+              <span>{usedSlots} ESM/ESP slots used</span>
+              <span>{PLUGIN_SLOT_LIMIT} max</span>
+            </div>
+          </div>
+
+          <p className="text-xs text-text-muted mt-2">
+            Note: ESL (Light) plugins don't count toward this limit.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
 // Stats Header Component
 // ============================================
 
@@ -677,6 +781,12 @@ export const LoadOrderView: React.FC<LoadOrderViewProps> = ({ slug, revision }) 
         cached={data.cached}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+      />
+
+      {/* Slot limit warning */}
+      <SlotLimitWarning
+        esmCount={data.stats.esmCount}
+        espCount={data.stats.espCount}
       />
 
       {/* View mode: Graph */}

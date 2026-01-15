@@ -407,9 +407,11 @@
   - Highlight differences
   - Priority: 44
 
-- [ ] **US-046**: Slot limit warning
-  - Warn when approaching 254 plugin limit
-  - ESL slot counting
+- [x] **US-046**: Slot limit warning
+  - SlotLimitWarning component with progress bar visualization
+  - Warning at 90% threshold (229+ plugins), critical at 98% (249+ plugins)
+  - Shows used vs. remaining slots with actionable advice
+  - Note that ESL plugins don't count toward limit
   - Priority: 46
 
 ### Conflict Enhancements
