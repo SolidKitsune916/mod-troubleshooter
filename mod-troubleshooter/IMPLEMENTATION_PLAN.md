@@ -461,8 +461,12 @@
   - Pending key indicator for multi-key sequences
   - Priority: 55
 
-- [ ] **US-056**: Loading skeletons everywhere
-  - Consistent skeleton UI across all features
+- [x] **US-056**: Loading skeletons everywhere
+  - Reusable Skeleton component library: Skeleton, SkeletonText, SkeletonCard, SkeletonList, SkeletonGrid, SkeletonStats
+  - Consistent styling with animate-pulse and bg-bg-secondary
+  - Full accessibility support (role="status", aria-busy, aria-label)
+  - All major features already had skeletons: FOMOD, LoadOrder, Conflicts, Settings, Collections
+  - Added 23 unit tests for Skeleton components
   - Priority: 56
 
 ### Accessibility
