@@ -390,9 +390,13 @@
   - SelectionsToolbar component with Export/Import buttons
   - Priority: 38
 
-- [ ] **US-039**: Add FOMOD dependency graph visualization
-  - Show option dependencies as graph
-  - Highlight conditional relationships
+- [x] **US-039**: Add FOMOD dependency graph visualization
+  - FomodDependencyGraph component using React Flow
+  - Shows steps, groups, plugins, flags, and conditional installs as nodes
+  - Edges show flag-setting relationships and visibility dependencies
+  - Color-coded node types with legend
+  - Click on step nodes to navigate to wizard view
+  - Integrated as fourth view mode in FomodViewer
   - Priority: 39
 
 - [x] **US-040**: Add FOMOD search functionality

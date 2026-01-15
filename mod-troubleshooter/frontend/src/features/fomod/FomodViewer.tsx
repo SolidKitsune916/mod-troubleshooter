@@ -4,6 +4,7 @@ import { useFomodAnalysis } from '@hooks/useFomod.ts';
 import { ApiError } from '@services/api.ts';
 import { FomodTreeView } from './FomodTreeView.tsx';
 import { FomodComparisonView } from './FomodComparisonView.tsx';
+import { FomodDependencyGraph } from './FomodDependencyGraph.tsx';
 import type { ConfigSnapshot } from './FomodComparisonView.tsx';
 import {
   collectInstallFiles as collectFilesForSnapshot,
@@ -27,7 +28,7 @@ import type {
 // View Mode Types
 // ============================================
 
-type ViewMode = 'wizard' | 'tree' | 'comparison';
+type ViewMode = 'wizard' | 'tree' | 'comparison' | 'graph';
 
 // ============================================
 // Condition Flag Types and Helpers
@@ -1355,7 +1356,8 @@ const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ viewMode, onViewModeCha
 
   const modes: { value: ViewMode; icon: string; label: string }[] = [
     { value: 'wizard', icon: '📋', label: 'Wizard' },
-    { value: 'tree', icon: '🌳', label: 'Tree View' },
+    { value: 'tree', icon: '🌳', label: 'Tree' },
+    { value: 'graph', icon: '🕸️', label: 'Graph' },
     { value: 'comparison', icon: '⚖️', label: 'Compare' },
   ];
 
@@ -1752,6 +1754,7 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
         <p className="text-text-muted text-sm">
           {viewMode === 'wizard' && 'Interactive wizard view - make selections step by step'}
           {viewMode === 'tree' && 'Tree view - browse the full FOMOD structure'}
+          {viewMode === 'graph' && 'Graph view - visualize dependencies and relationships'}
           {viewMode === 'comparison' && 'Compare two configurations side-by-side'}
         </p>
         <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
@@ -1759,6 +1762,17 @@ export const FomodViewer: React.FC<FomodViewerProps> = ({ game, modId, fileId })
 
       {/* Tree View Mode */}
       {viewMode === 'tree' && <FomodTreeView data={data.data} />}
+
+      {/* Graph View Mode */}
+      {viewMode === 'graph' && (
+        <FomodDependencyGraph
+          data={data.data}
+          onNavigateToStep={(stepIndex) => {
+            setCurrentStepIndex(stepIndex);
+            setViewMode('wizard');
+          }}
+        />
+      )}
 
       {/* Comparison View Mode */}
       {viewMode === 'comparison' && (
