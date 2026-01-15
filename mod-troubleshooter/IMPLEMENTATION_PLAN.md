@@ -415,9 +415,13 @@
   - Filenames include collection name and timestamp
   - Priority: 43
 
-- [ ] **US-044**: Load order comparison mode
-  - Compare two load orders side-by-side
-  - Highlight differences
+- [x] **US-044**: Load order comparison mode
+  - LoadOrderComparisonView component with side-by-side snapshot comparison
+  - Save current load order as Snapshot A or B
+  - Diff shows: A Only, B Only, Moved (with position delta), Same
+  - Filter by diff status with summary panel
+  - Position delta indicator (↑/↓) for moved plugins
+  - Unit tests for comparison logic (13 tests)
   - Priority: 44
 
 - [x] **US-046**: Slot limit warning

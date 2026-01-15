@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 
 import { useLoadOrderAnalysis } from '@hooks/useLoadOrder.ts';
 import { ApiError } from '@services/api.ts';
 import { DependencyGraphView } from './DependencyGraphView.tsx';
+import { LoadOrderComparisonView } from './LoadOrderComparisonView.tsx';
+import type { LoadOrderSnapshot } from './LoadOrderComparisonView.tsx';
 
 import type {
   LoadOrderPluginInfo,
@@ -13,7 +15,7 @@ import type {
 } from '@/types/index.ts';
 
 /** View mode for the load order display */
-type ViewMode = 'list' | 'graph';
+type ViewMode = 'list' | 'graph' | 'comparison';
 
 // ============================================
 // Props Interfaces
@@ -215,46 +217,42 @@ interface ViewModeToggleProps {
   onChange: (mode: ViewMode) => void;
 }
 
-const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ viewMode, onChange }) => (
-  <div
-    className="flex rounded-sm overflow-hidden border border-border"
-    role="radiogroup"
-    aria-label="View mode"
-  >
-    <button
-      onClick={() => onChange('list')}
-      className={`
-        min-h-9 px-4 py-2 text-sm font-medium
-        transition-colors motion-reduce:transition-none
-        focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-[-2px]
-        ${viewMode === 'list'
-          ? 'bg-accent text-white'
-          : 'bg-bg-secondary text-text-secondary hover:bg-bg-hover'
-        }
-      `}
-      role="radio"
-      aria-checked={viewMode === 'list'}
+const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ viewMode, onChange }) => {
+  const modes: { value: ViewMode; label: string; icon: string }[] = [
+    { value: 'list', label: 'List', icon: '📋' },
+    { value: 'graph', label: 'Graph', icon: '🕸️' },
+    { value: 'comparison', label: 'Compare', icon: '📊' },
+  ];
+
+  return (
+    <div
+      className="flex rounded-sm overflow-hidden border border-border"
+      role="radiogroup"
+      aria-label="View mode"
     >
-      List
-    </button>
-    <button
-      onClick={() => onChange('graph')}
-      className={`
-        min-h-9 px-4 py-2 text-sm font-medium
-        transition-colors motion-reduce:transition-none
-        focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-[-2px]
-        ${viewMode === 'graph'
-          ? 'bg-accent text-white'
-          : 'bg-bg-secondary text-text-secondary hover:bg-bg-hover'
-        }
-      `}
-      role="radio"
-      aria-checked={viewMode === 'graph'}
-    >
-      Graph
-    </button>
-  </div>
-);
+      {modes.map((mode) => (
+        <button
+          key={mode.value}
+          onClick={() => onChange(mode.value)}
+          className={`
+            min-h-9 px-4 py-2 text-sm font-medium flex items-center gap-1.5
+            transition-colors motion-reduce:transition-none
+            focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-[-2px]
+            ${viewMode === mode.value
+              ? 'bg-accent text-white'
+              : 'bg-bg-secondary text-text-secondary hover:bg-bg-hover'
+            }
+          `}
+          role="radio"
+          aria-checked={viewMode === mode.value}
+        >
+          <span aria-hidden="true">{mode.icon}</span>
+          {mode.label}
+        </button>
+      ))}
+    </div>
+  );
+};
 
 // ============================================
 // Constants
@@ -838,12 +836,37 @@ export const LoadOrderView: React.FC<LoadOrderViewProps> = ({ slug, revision }) 
   const [selectedPlugin, setSelectedPlugin] = useState<LoadOrderPluginInfo | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
 
+  // Comparison mode state
+  const [snapshotA, setSnapshotA] = useState<LoadOrderSnapshot | null>(null);
+  const [snapshotB, setSnapshotB] = useState<LoadOrderSnapshot | null>(null);
+
   // Build map of plugin issues
   const issues = data?.issues;
   const pluginIssues = useMemo(() => {
     if (!issues) return new Map<string, LoadOrderIssue[]>();
     return buildPluginIssuesMap(issues);
   }, [issues]);
+
+  // Snapshot handlers
+  const handleSaveSnapshotA = useCallback(() => {
+    if (!data?.plugins) return;
+    setSnapshotA({
+      id: `a-${Date.now()}`,
+      label: 'Load Order A',
+      plugins: [...data.plugins],
+      savedAt: new Date(),
+    });
+  }, [data]);
+
+  const handleSaveSnapshotB = useCallback(() => {
+    if (!data?.plugins) return;
+    setSnapshotB({
+      id: `b-${Date.now()}`,
+      label: 'Load Order B',
+      plugins: [...data.plugins],
+      savedAt: new Date(),
+    });
+  }, [data]);
 
   // Handle selecting a plugin from issue panel
   const handleSelectIssue = (pluginFilename: string) => {
@@ -909,6 +932,17 @@ export const LoadOrderView: React.FC<LoadOrderViewProps> = ({ slug, revision }) 
           issues={data.issues}
           selectedPlugin={selectedPlugin}
           onSelectPlugin={setSelectedPlugin}
+        />
+      )}
+
+      {/* View mode: Comparison */}
+      {viewMode === 'comparison' && (
+        <LoadOrderComparisonView
+          currentPlugins={data.plugins}
+          onSaveSnapshotA={handleSaveSnapshotA}
+          onSaveSnapshotB={handleSaveSnapshotB}
+          snapshotA={snapshotA}
+          snapshotB={snapshotB}
         />
       )}
 
