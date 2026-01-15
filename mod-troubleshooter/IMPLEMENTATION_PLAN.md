@@ -484,7 +484,7 @@
 
 ## Discovered Issues
 
-- **useViewerCollections.ts:37** - ESLint error: `Calling setState synchronously within an effect can trigger cascading renders`. The `setLoading(true)` call in useEffect violates React Compiler rules. Consider restructuring to use `useSyncExternalStore` or lifting loading state into the async callback.
+_No outstanding issues._
 
 ## Future Considerations
 

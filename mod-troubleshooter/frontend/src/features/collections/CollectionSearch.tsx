@@ -66,8 +66,17 @@ export const CollectionSearch: React.FC<CollectionSearchProps> = ({
           type="submit"
           disabled={isLoading || !input.trim()}
           className={styles.submitButton}
+          aria-busy={isLoading}
         >
-          {isLoading ? 'Loading...' : 'Load Collection'}
+          <span className={styles.buttonContent}>
+            {isLoading && (
+              <span
+                className={styles.spinner}
+                aria-hidden="true"
+              />
+            )}
+            {isLoading ? 'Loading' : 'Load Collection'}
+          </span>
         </button>
       </div>
       {error && (

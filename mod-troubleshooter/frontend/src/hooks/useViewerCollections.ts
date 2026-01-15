@@ -1,7 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 
 import type { CollectionsData, ViewerCollection, GameId } from '@/types';
 import { loadCollectionsData, deduplicateMods, getUniqueCategories } from '@/utils/dataLoader';
+
+/** Status of an async fetch operation */
+type FetchStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export interface UseViewerCollectionsResult {
   data: CollectionsData | null;
@@ -26,30 +29,49 @@ export interface UseViewerCollectionsResult {
  */
 export function useViewerCollections(): UseViewerCollectionsResult {
   const [data, setData] = useState<CollectionsData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<FetchStatus>('loading');
   const [error, setError] = useState<string | null>(null);
   const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set());
   const [currentView, setCurrentView] = useState<'all' | string>('all');
   const [currentGame, setCurrentGame] = useState<GameId>('skyrim');
 
+  // Track which game's data we've loaded to detect stale responses
+  const loadedGameRef = useRef<GameId | null>(null);
+
   // Load data when game changes
   useEffect(() => {
-    setLoading(true);
-    setError(null);
+    // Skip if we've already loaded this game's data
+    if (loadedGameRef.current === currentGame) {
+      return;
+    }
+
+    let cancelled = false;
+
     loadCollectionsData(currentGame)
       .then((loadedData) => {
+        if (cancelled) return;
+        loadedGameRef.current = currentGame;
         setData(loadedData);
         // Select all collections by default
         const allIds = new Set(loadedData.collections.map((c) => c.id));
         setSelectedCollections(allIds);
         setCurrentView('all');
-        setLoading(false);
+        setStatus('success');
+        setError(null);
       })
       .catch((err) => {
+        if (cancelled) return;
         setError(err.message);
-        setLoading(false);
+        setStatus('error');
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentGame]);
+
+  // Derive loading state from status
+  const loading = status === 'loading';
 
   // Derived: selected collections list
   const selectedCollectionsList = useMemo(() => {
@@ -115,8 +137,13 @@ export function useViewerCollections(): UseViewerCollectionsResult {
   }, []);
 
   const handleGameChange = useCallback((game: GameId) => {
-    setCurrentGame(game);
-  }, []);
+    if (game !== currentGame) {
+      // Reset status to loading when switching games - this is done outside the effect
+      // to avoid the React Compiler warning about synchronous setState in effects
+      setStatus('loading');
+      setCurrentGame(game);
+    }
+  }, [currentGame]);
 
   return {
     data,
