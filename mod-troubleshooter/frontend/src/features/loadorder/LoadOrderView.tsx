@@ -361,6 +361,112 @@ const SlotLimitWarning: React.FC<SlotLimitWarningProps> = ({ esmCount, espCount 
 };
 
 // ============================================
+// Export Helper Functions
+// ============================================
+
+/**
+ * Generate plugins.txt content from load order.
+ * Format: Each plugin on a new line with * prefix for enabled plugins.
+ */
+function generatePluginsTxt(plugins: LoadOrderPluginInfo[]): string {
+  // Sort by index to ensure proper order
+  const sorted = [...plugins].sort((a, b) => a.index - b.index);
+  return sorted.map(p => `*${p.filename}`).join('\n');
+}
+
+/**
+ * Generate loadorder.txt content from load order.
+ * Format: Each plugin on a new line in load order.
+ */
+function generateLoadOrderTxt(plugins: LoadOrderPluginInfo[]): string {
+  const sorted = [...plugins].sort((a, b) => a.index - b.index);
+  return sorted.map(p => p.filename).join('\n');
+}
+
+/**
+ * Download text content as a file.
+ */
+function downloadText(content: string, filename: string): void {
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ============================================
+// Export Toolbar Component
+// ============================================
+
+interface ExportToolbarProps {
+  plugins: LoadOrderPluginInfo[];
+  collectionName?: string;
+}
+
+const ExportToolbar: React.FC<ExportToolbarProps> = ({ plugins, collectionName }) => {
+  const hasPlugins = plugins.length > 0;
+  const baseName = collectionName ?? 'loadorder';
+
+  const handleExportPluginsTxt = () => {
+    const content = generatePluginsTxt(plugins);
+    downloadText(content, `${baseName}-plugins.txt`);
+  };
+
+  const handleExportLoadOrderTxt = () => {
+    const content = generateLoadOrderTxt(plugins);
+    downloadText(content, `${baseName}-loadorder.txt`);
+  };
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-sm text-text-muted mr-1">Export:</span>
+      <button
+        onClick={handleExportPluginsTxt}
+        disabled={!hasPlugins}
+        className={`
+          min-h-9 px-3 py-1.5 rounded-sm font-medium text-sm
+          flex items-center gap-2
+          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+          transition-colors motion-reduce:transition-none
+          ${
+            hasPlugins
+              ? 'bg-bg-secondary text-text-secondary hover:bg-bg-secondary/80 hover:text-text-primary'
+              : 'bg-bg-secondary/50 text-text-muted cursor-not-allowed'
+          }
+        `}
+        title="Export as plugins.txt (enabled plugins list)"
+      >
+        <span aria-hidden="true">📄</span>
+        plugins.txt
+      </button>
+      <button
+        onClick={handleExportLoadOrderTxt}
+        disabled={!hasPlugins}
+        className={`
+          min-h-9 px-3 py-1.5 rounded-sm font-medium text-sm
+          flex items-center gap-2
+          focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-2
+          transition-colors motion-reduce:transition-none
+          ${
+            hasPlugins
+              ? 'bg-bg-secondary text-text-secondary hover:bg-bg-secondary/80 hover:text-text-primary'
+              : 'bg-bg-secondary/50 text-text-muted cursor-not-allowed'
+          }
+        `}
+        title="Export as loadorder.txt (load order list)"
+      >
+        <span aria-hidden="true">📋</span>
+        loadorder.txt
+      </button>
+    </div>
+  );
+};
+
+// ============================================
 // Stats Header Component
 // ============================================
 
@@ -787,6 +893,12 @@ export const LoadOrderView: React.FC<LoadOrderViewProps> = ({ slug, revision }) 
       <SlotLimitWarning
         esmCount={data.stats.esmCount}
         espCount={data.stats.espCount}
+      />
+
+      {/* Export toolbar */}
+      <ExportToolbar
+        plugins={data.plugins}
+        collectionName={slug}
       />
 
       {/* View mode: Graph */}

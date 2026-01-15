@@ -397,9 +397,11 @@
 
 ### Load Order Enhancements
 
-- [ ] **US-043**: Export load order
-  - Export to plugins.txt format
-  - Export to loadorder.txt format
+- [x] **US-043**: Export load order
+  - Export to plugins.txt format (with asterisk prefix for enabled plugins)
+  - Export to loadorder.txt format (plain filenames)
+  - ExportToolbar component with download buttons
+  - Filenames include collection name and timestamp
   - Priority: 43
 
 - [ ] **US-044**: Load order comparison mode
